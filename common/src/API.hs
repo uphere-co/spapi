@@ -5,5 +5,5 @@ module API where
 
 import Servant.API
 
-type API = "static" :> Raw
+type API = "servant" :> Raw
 
