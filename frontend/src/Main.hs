@@ -15,8 +15,8 @@ bodyElement = do
       counts <- foldDyn (+) (0 :: Int) $
                   leftmost [ 1 <$ evIncr, -1 <$ evDecr ]
       el "div" $ display counts
-      evIncr <- button "Increment"
-      evDecr <- button "Decrement"
+      evIncr <- button "Inc"
+      evDecr <- button "Dec"
   pure ()
 
 
