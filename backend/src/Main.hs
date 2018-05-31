@@ -4,7 +4,7 @@ import API
 
 import Data.Proxy (Proxy(..))
 import System.Environment
-import Servant.Utils.StaticFiles (serveDirectory)
+import Servant.Utils.StaticFiles (serveDirectoryFileServer)
 import Servant.Server (serve)
 -- import Network.Wai.Dispatch (dispatch)
 import Network.Wai.Handler.Warp (run)
@@ -21,7 +21,7 @@ main = do
   -- run 8080 $ static $
   --   serve api (serveDirectory d)
   etagcontext <- defaultETagContext False
-  run 3456 $ etag etagcontext NoMaxAge $ serve api (serveDirectory d)
+  run 3456 $ etag etagcontext NoMaxAge $ serve api (serveDirectoryFileServer d)
 
 
   -- staticPolicy (addBase "servant") $ serve api (serveDirectory d)   --  $ staticRoot d
