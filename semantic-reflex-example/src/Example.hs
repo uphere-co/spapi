@@ -133,7 +133,7 @@ progressProgress = progress (pure $ Range 0 vMax) (pure v) $ def
 intro :: forall t m. (RouteWriter t Text m, MonadWidget t m) => Section t m
 intro = Section "Introduction" blank $ do
   paragraph $ do
-    text "My comment here: This library aims to provide a type safe Haskell wrapper around Semantic UI components, to allow easy construction of nice looking web applications in GHCJS. It is currently in early development and started as a fork of the "
+    text "This library aims to provide a type safe Haskell wrapper around Semantic UI components, to allow easy construction of nice looking web applications in GHCJS. It is currently in early development and started as a fork of the "
     hyperlink "https://github.com/reflex-frp/reflex-dom-semui" $
       text "reflex-dom-semui"
     text " library, although it has since been completely rewritten to remove dependencies on external JavaScript."
