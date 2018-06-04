@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import API
@@ -19,8 +21,12 @@ import           Control.Monad                       (forever)
 import           Control.Monad.IO.Class              (liftIO)
 import qualified Data.IntMap                   as IM
 
-import           CloudHaskell.QueryQueue             (QueryStatus(..),QQVar,emptyQQ,next)
-import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..))
+import           CloudHaskell.QueryQueue             (QueryStatus(..),QQVar,emptyQQ,next
+                                                     ,singleQuery
+                                                     )
+import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
+                                                     ,ResultSentence(..)
+                                                     )
 import           SemanticParserAPI.CLI.Client        (consoleClient)
 import           CloudHaskell.Util                   (LogProcess
                                                      ,onesecond,tellLog,queryProcess
@@ -57,8 +63,12 @@ webClient qqvar sc = do
 exampleItem :: Item
 exampleItem = Item 0 "example item"
 
-getItem :: Handler Item
-getItem = pure exampleItem
+getItem :: QQVar ComputeQuery ComputeResult -> Handler Item
+getItem qqvar = do
+  let sent = "I sent a letter to him."
+  CR_Sentence (ResultSentence _ tokss mgs) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
+  -- liftIO $ print mgs
+  pure (Item 0 (show mgs))
 
 main = do
   (d:_) <- getArgs
@@ -76,7 +86,7 @@ main = do
 
   run 8080 $
     serve api (serveDirectoryFileServer d :<|>
-               getItem
+               getItem qqvar
               )
   -- etagcontext <- defaultETagContext False
   -- run 3456 $ etag etagcontext NoMaxAge $ serve api (serveDirectoryFileServer d)
