@@ -2,4 +2,4 @@
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-nix-shell $DIR/default.nix -A shells.ghc8_2_1 --add-root $DIR/dist-newstyle/gc-roots/gc-root --indirect --run "cabal $(printf "%q " "$@")"
+nix-shell -j1 --cores 20 $DIR/default.nix --arg revision "import ../uphere-ops/api/rev-dev.nix" -A shells.ghc8_2_1 --add-root $DIR/dist-newstyle/gc-roots/gc-root --indirect --run "cabal $(printf "%q " "$@")"
