@@ -29,7 +29,10 @@ executable backend
                      -- , wai-middleware-etag
                      , warp
                      --
-                     -- , fastText
+                     , containers
+                     , distributed-process
+                     , distributed-process-lifted
+                     , stm
                      , semantic-parser-api-common
                      , semantic-parser-api-compute
   hs-source-dirs:      src
