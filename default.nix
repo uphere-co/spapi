@@ -1,6 +1,27 @@
 { revision }:
 
-(import ./reflex-platform {}).project ({ pkgs, ... }: {
+
+
+(import ./reflex-platform {}).project ({ pkgs, ... }:
+
+let
+  fasttext = import (revision.uphere-nix-overlay + "/nix/cpp-modules/fasttext.nix") { inherit (pkgs) stdenv fetchgit; };
+  res_corenlp = import (revision.uphere-nix-overlay + "/nix/linguistic-resources/corenlp.nix") {
+    inherit (pkgs) fetchurl fetchzip srcOnly;
+  };
+  corenlp = res_corenlp.corenlp;
+  corenlp_models = res_corenlp.corenlp_models;
+
+  hsconfig = pkgs.lib.callPackageWith (pkgs//revision) (revision.uphere-nix-overlay + "/nix/haskell-modules/configuration-semantic-parser-api.nix")
+               { inherit corenlp corenlp_models fasttext; };
+
+
+#:${hsenv}/share/x86_64-linux-ghc-8.0.2/HCoreNLP-0.1.0.0/HCoreNLPProto.jar
+
+in
+
+
+{
   packages = {
     common = ./common;
     backend = ./backend;
@@ -11,19 +32,6 @@
 
   overrides =
 
-    let
-      fasttext = import (revision.uphere-nix-overlay + "/nix/cpp-modules/fasttext.nix") { inherit (pkgs) stdenv fetchgit; };
-      res_corenlp = import (revision.uphere-nix-overlay + "/nix/linguistic-resources/corenlp.nix") {
-        inherit (pkgs) fetchurl fetchzip srcOnly;
-      };
-      corenlp = res_corenlp.corenlp;
-      corenlp_models = res_corenlp.corenlp_models;
-
-      hsconfig = pkgs.lib.callPackageWith (pkgs//revision) (revision.uphere-nix-overlay + "/nix/haskell-modules/configuration-semantic-parser-api.nix")
-                   { inherit corenlp corenlp_models fasttext; };
-
-
-    in
 
     self: super:
 
@@ -67,6 +75,16 @@
   #  bundleIdentifier = "org.example.frontend";
   #  bundleName = "Example iOS App";
   #};
+
+  tools = ghc:
+            let corenlpenv = pkgs.makeSetupHook { }
+                  (pkgs.writeText "setup-hook.sh" ''
+                     export CLASSPATH="${corenlp_models}:${corenlp}/stanford-corenlp-3.7.0.jar:${corenlp}/protobuf.jar:${corenlp}/joda-time.jar:${corenlp}/jollyday.jar:${ghc.HCoreNLP}/share/x86_64-linux-ghc-8.2.1/HCoreNLP-0.1.0.0/HCoreNLPProto.jar"
+                  '');
+            in [ corenlpenv ] ;
+
+
+#[ corenlpenv ]; #[ pkgs.hello ];
 
   shells = {
     ghc8_2_1 = ["common" "backend" ];
