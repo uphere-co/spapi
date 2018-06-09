@@ -232,11 +232,11 @@ app = runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ do
             & headerConfig_preContent ?~ semanticLogo
             & style |~ Style "cursor: pointer"
       (e, _) <- pageHeader' H1 conf $ do
-        text "Semantic UI for Reflex-DOM"
-        subHeader $ text "Documentation and examples"
+        text "UpHere Semantic Parser"
+        subHeader $ text "Semantic Parser API test and Reuters article analysis"
       tellRoute $ [] <$ domEvent Click e
-      hackageButton
-      githubButton
+      -- hackageButton
+      -- githubButton
 
   let sections = M.insert Nothing intro $ M.fromList
         $ mapMaybe (\(name, _, mSection) -> (,) (Just $ toId name) <$> mSection)

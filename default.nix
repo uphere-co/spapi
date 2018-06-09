@@ -79,7 +79,7 @@ in
                   (pkgs.writeText "setup-hook.sh" ''
                      export CLASSPATH="${corenlp_models}:${corenlp}/stanford-corenlp-3.7.0.jar:${corenlp}/protobuf.jar:${corenlp}/joda-time.jar:${corenlp}/jollyday.jar:${ghc.HCoreNLP}/share/x86_64-linux-ghc-8.2.1/HCoreNLP-0.1.0.0/HCoreNLPProto.jar"
                   '');
-            in [ corenlpenv ] ;
+            in if ghc.ghc.isGhcjs then [] else [ corenlpenv ] ;
 
   shells = {
     ghc8_2_1 = ["common" "backend" ];
