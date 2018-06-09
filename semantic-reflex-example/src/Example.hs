@@ -238,6 +238,21 @@ app = runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ do
       -- hackageButton
       -- githubButton
 
+      input def $ textInput $ def & textInputConfig_placeholder |~ "Search..."
+      analyzeButton
+
+analyzeButton :: MonadWidget t m => m ()
+analyzeButton = void $ button conf $ do
+  -- icon "github" def
+  text "Analyze"
+ where
+  url = "https://github.com/tomsmalley/semantic-reflex"
+  conf = def
+    & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
+    & attrs |~ ("href" =: url)
+
+
+{- 
   let sections = M.insert Nothing intro $ M.fromList
         $ mapMaybe (\(name, _, mSection) -> (,) (Just $ toId name) <$> mSection)
         $ concatMap categoryItems progressTable
@@ -298,21 +313,10 @@ app = runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ do
     text $ "Animal icons courtesy of "
     let url = "https://www.creativetail.com/40-free-flat-animal-icons/"
     hyperlink url $ text "Creative Tail"
+-}
 
 semanticLogo :: MonadWidget t m => m ()
 semanticLogo = image (def & imageConfig_shape |?~ Rounded) $ Left $ Img url def
   where url = "https://semantic-ui.com/images/logo.png"
 
-githubButton :: MonadWidget t m => m ()
-githubButton = void $ button conf $ do
-  icon "github" def
-  text "GitHub"
-  where
-    url = "https://github.com/tomsmalley/semantic-reflex"
-    conf = def
-      & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
-      & attrs |~ ("href" =: url)
 
-hackageButton :: MonadWidget t m => m ()
-hackageButton = void $ button conf $ text "Hackage"
-  where conf = def & buttonConfig_type .~ LinkButton & buttonConfig_disabled |~ True
