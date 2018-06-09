@@ -15,9 +15,6 @@ let
   hsconfig = pkgs.lib.callPackageWith (pkgs//revision) (revision.uphere-nix-overlay + "/nix/haskell-modules/configuration-semantic-parser-api.nix")
                { inherit corenlp corenlp_models fasttext; };
 
-
-#:${hsenv}/share/x86_64-linux-ghc-8.0.2/HCoreNLP-0.1.0.0/HCoreNLPProto.jar
-
 in
 
 
@@ -77,14 +74,12 @@ in
   #};
 
   tools = ghc:
+            # TODO: move this code to uphere-nix-overlay
             let corenlpenv = pkgs.makeSetupHook { }
                   (pkgs.writeText "setup-hook.sh" ''
                      export CLASSPATH="${corenlp_models}:${corenlp}/stanford-corenlp-3.7.0.jar:${corenlp}/protobuf.jar:${corenlp}/joda-time.jar:${corenlp}/jollyday.jar:${ghc.HCoreNLP}/share/x86_64-linux-ghc-8.2.1/HCoreNLP-0.1.0.0/HCoreNLPProto.jar"
                   '');
             in [ corenlpenv ] ;
-
-
-#[ corenlpenv ]; #[ pkgs.hello ];
 
   shells = {
     ghc8_2_1 = ["common" "backend" ];
