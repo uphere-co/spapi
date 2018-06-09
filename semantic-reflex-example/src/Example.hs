@@ -233,7 +233,7 @@ app = runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ do
             & style |~ Style "cursor: pointer"
       (e, _) <- pageHeader' H1 conf $ do
         text "UpHere Semantic Parser"
-        subHeader $ text "Semantic Parser API test and Reuters article analysis"
+        subHeader $ text "Semantic Parser with Reuters article analysis"
       tellRoute $ [] <$ domEvent Click e
       -- hackageButton
       -- githubButton

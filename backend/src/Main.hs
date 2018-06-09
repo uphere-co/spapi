@@ -10,8 +10,8 @@ import Servant.API ((:<|>)((:<|>)))
 import Servant.Utils.StaticFiles (serveDirectoryFileServer)
 import Servant.Server (Handler,serve)
 import Network.Wai.Handler.Warp (run)
--- import Network.Wai.Application.Static (staticApp, defaultWebAppSettings)
--- import Network.Wai.Middleware.ETag
+import Network.Wai.Middleware.ETag
+
 
 import           Control.Concurrent                  (forkIO,threadDelay)
 import           Control.Concurrent.STM              (atomically,retry,newTVarIO
@@ -32,8 +32,6 @@ import           CloudHaskell.Util                   (LogProcess
                                                      ,onesecond,tellLog,queryProcess
                                                      ,client,mainP,initP)
 
-
--- staticRoot = staticApp . defaultWebAppSettings
 
 api :: Proxy API
 api = Proxy
@@ -72,7 +70,7 @@ getItem qqvar = do
 
 main = do
   (d:_) <- getArgs
-  putStrLn "Serving on localhost:8080/static/, visit http://localhost:8080/static/index.html"
+  -- putStrLn "Serving on localhost:8080/static/, visit http://localhost:8080/static/index.html"
 
   qqvar <- newTVarIO emptyQQ
 
@@ -84,13 +82,12 @@ main = do
 
   forkIO $ client (port,hostg,hostl,serverip,serverport) (initP (mainP (webClient qqvar)))
 
+  etagcontext <- defaultETagContext False
   run 8080 $
-    serve api (serveDirectoryFileServer d :<|>
-               getItem qqvar
-              )
-  -- etagcontext <- defaultETagContext False
-  -- run 3456 $ etag etagcontext NoMaxAge $ serve api (serveDirectoryFileServer d)
+    etag etagcontext NoMaxAge  $
+      serve api (serveDirectoryFileServer d :<|>
+                 getItem qqvar
+                )
 
 
-  -- staticPolicy (addBase "servant") $ serve api (serveDirectory d)
-  -- staticRoot d $ serve api (serveDirectory d)
+

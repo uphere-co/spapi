@@ -54,7 +54,7 @@ in
           sha256 = "00bmakqm9893h8l3w7l1r1fjkpyffifcaicqmj2q5wwlfvm96hbf";
         }) {};
 
-      #wai-middleware-etag = doJailbreak super.wai-middleware-etag;
+      wai-middleware-etag = pkgs.haskell.lib.doJailbreak super.wai-middleware-etag;
 
 
 

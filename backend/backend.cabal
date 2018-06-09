@@ -24,9 +24,7 @@ executable backend
                      , servant
                      , servant-server
                      , wai
-                     -- , wai-app-static
-                     -- , wai-middleware-static
-                     -- , wai-middleware-etag
+                     , wai-middleware-etag
                      , warp
                      --
                      , containers
