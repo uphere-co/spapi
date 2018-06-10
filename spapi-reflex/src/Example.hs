@@ -56,6 +56,9 @@ import Example.Section.Transition (transitions)
 import API
 import Servant.Reflex
 
+import SemanticParserAPI.Type (InputSentence(..))
+
+
 api :: Proxy API
 api = Proxy
 
@@ -241,32 +244,45 @@ app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
 app = do
 
   runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ mdo
-    let getitem = client
-                    restAPI
-                    (Proxy :: Proxy m)
-                    (Proxy :: Proxy ())
-                    (constDyn (BasePath "/"))
+    let postanalysis = client
+                         restAPI
+                         (Proxy :: Proxy m)
+                         (Proxy :: Proxy ())
+                         (constDyn (BasePath "/"))
         mainConfig =  def
             & elConfigAttributes |~ ("id" =: "main")
             & elConfigClasses |~ "ui container"
 
     -- Header
-    (b,response) <-
-      segment (def & attrs |~ ("id" =: "masthead") & segmentConfig_vertical |~ True) $
-        divClass "ui container" $ do
-          let conf = def
-                & headerConfig_preContent ?~ semanticLogo
-                & style |~ Style "cursor: pointer"
-          (e, _) <- pageHeader' H1 conf $ do
-            text "UpHere Semantic Parser"
-            subHeader $ text "Semantic Parser with Reuters article analysis"
-          tellRoute $ [] <$ domEvent Click e
-          input def $ textInput $ def & textInputConfig_placeholder |~ "Search..."
-          b <- analyzeButton
-          response <- lift $ lift $ fmapMaybe reqSuccess <$> getitem b
-          pure (b,response)
+
+    segment (def & attrs |~ ("id" =: "masthead") & segmentConfig_vertical |~ True) $
+      divClass "ui container" $ do
+        let conf = def
+              & headerConfig_preContent ?~ semanticLogo
+              & style |~ Style "cursor: pointer"
+        (e, _) <- pageHeader' H1 conf $ do
+          text "UpHere Semantic Parser"
+          subHeader $ text "Semantic Parser with Reuters article analysis"
+        tellRoute $ [] <$ domEvent Click e
+
+    -- Main
+
     ui "div" mainConfig $ do
-      dynText =<< holdDyn "test" (fmap (T.pack . show) response)
+      paragraph $ do
+        text "Enter a sentence and then you will get a semantic analysis."
+      response <- paragraph $ do
+        (ti,btn) <- input (def & inputConfig_fluid |~ True
+                               & inputConfig_action |?~ RightAction) $ do
+          ti <- textInput $ def & textInputConfig_placeholder |~ "Sentence..."
+          btn <- analyzeButton
+          pure (ti,btn)
+        -- b <- analyzeButton
+        let inputsent = fmap (Right . InputSentence) (value ti)
+        response <- lift $ lift $ fmapMaybe reqSuccess <$> postanalysis inputsent btn
+        -- pure (b,response)
+        pure response
+      paragraph $
+          dynText =<< holdDyn "" (fmap (T.pack . show) response)
 
 
 

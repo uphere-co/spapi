@@ -136,20 +136,14 @@ mkFrameNetData framemap fname = fromMaybe (fname,DefRoot []) $ do
       defroot0 = F.p_defRoot (TL.fromStrict txt)
   return (fname,convertDefRoot defroot0)
 
-
-
-
-
-
-
-
-getItem ::
+postAnalysis ::
      FrameDB
   -> [RoleInstance]
   -> QQVar ComputeQuery ComputeResult
+  -> InputSentence
   -> Handler APIResult
-getItem framedb rolemap qqvar = do
-  let sent = "I sent a letter to him."
+postAnalysis framedb rolemap qqvar (InputSentence sent) = do
+  -- let sent = "I sent a letter to him."
   CR_Sentence (ResultSentence _ tokss mgs) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
   -- liftIO $ print mgs
   dots <- liftIO $ mapM createDotGraph mgs
@@ -185,5 +179,5 @@ main = do
   run 8080 $
     etag etagcontext NoMaxAge  $
       serve api (serveDirectoryFileServer d :<|>
-                 getItem framedb rolemap qqvar
+                 postAnalysis framedb rolemap qqvar
                 )
