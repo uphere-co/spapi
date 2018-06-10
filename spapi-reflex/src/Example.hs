@@ -16,6 +16,7 @@
 
 module Example where
 
+import Control.Lens ((^.))
 import Control.Monad (void, (<=<))
 import Control.Monad.Trans.Class (lift)
 import Data.Bool (bool)
@@ -56,7 +57,10 @@ import Example.Section.Transition (transitions)
 import API
 import Servant.Reflex
 
-import SemanticParserAPI.Type (InputSentence(..))
+import Reflex.Active (Active(Dyn))
+
+
+import SemanticParserAPI.Type (InputSentence(..),resultPNGData,png_data)
 
 
 api :: Proxy API
@@ -278,11 +282,13 @@ app = do
           pure (ti,btn)
         -- b <- analyzeButton
         let inputsent = fmap (Right . InputSentence) (value ti)
-        response <- lift $ lift $ fmapMaybe reqSuccess <$> postanalysis inputsent btn
-        -- pure (b,response)
-        pure response
-      paragraph $
-          dynText =<< holdDyn "" (fmap (T.pack . show) response)
+        lift $ lift $ fmapMaybe reqSuccess <$> postanalysis inputsent btn
+      paragraph $ do
+        let extractPNG r = case r ^. resultPNGData of
+                             [] -> ""
+                             dat:_ -> dat ^. png_data
+        src <- holdDyn "" (fmap extractPNG response)
+        img (Dyn src) def
 
 
 
