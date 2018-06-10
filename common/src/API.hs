@@ -1,13 +1,17 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
 module API where
 
-import Data.Aeson (FromJSON(..),ToJSON(..))
-import GHC.Generics (Generic)
-import Servant.API
+import           Data.Aeson         (FromJSON(..),ToJSON(..))
+import           GHC.Generics       (Generic)
+import           Servant.API
 
+import           NLP.Semantics.Type (MeaningTree)
+
+
+{- 
 data Item = Item { itemId :: Integer
                  , itemText :: String
                  }
@@ -15,7 +19,8 @@ data Item = Item { itemId :: Integer
 
 instance ToJSON Item
 instance FromJSON Item
+-}
 
 type API = "servant" :> Raw :<|> RESTAPI
 
-type RESTAPI = "item" :> Get '[JSON] Item
+type RESTAPI = "item" :> Get '[JSON] [MeaningTree]
