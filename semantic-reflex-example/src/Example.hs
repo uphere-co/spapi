@@ -241,56 +241,40 @@ app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
 app = do
 
   runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ mdo
-    url <- baseUrlWidget
-
     let getitem = client
                     restAPI
-                    (Proxy :: Proxy m) -- (RouteWriterT t Text (RouteT t Text m)))
+                    (Proxy :: Proxy m)
                     (Proxy :: Proxy ())
-                    url -- (Proxy :: Proxy '[JSON]) url
+                    (constDyn (BasePath "/"))
+        mainConfig =  def
+            & elConfigAttributes |~ ("id" =: "main")
+            & elConfigClasses |~ "ui container"
 
     -- Header
-    segment (def & attrs |~ ("id" =: "masthead") & segmentConfig_vertical |~ True) $
-      divClass "ui container" $ do
-        let conf = def
-              & headerConfig_preContent ?~ semanticLogo
-              & style |~ Style "cursor: pointer"
-        (e, _) <- pageHeader' H1 conf $ do
-          text "UpHere Semantic Parser"
-          subHeader $ text "Semantic Parser with Reuters article analysis"
-        tellRoute $ [] <$ domEvent Click e
-        -- hackageButton
-        -- githubButton
+    (b,response) <-
+      segment (def & attrs |~ ("id" =: "masthead") & segmentConfig_vertical |~ True) $
+        divClass "ui container" $ do
+          let conf = def
+                & headerConfig_preContent ?~ semanticLogo
+                & style |~ Style "cursor: pointer"
+          (e, _) <- pageHeader' H1 conf $ do
+            text "UpHere Semantic Parser"
+            subHeader $ text "Semantic Parser with Reuters article analysis"
+          tellRoute $ [] <$ domEvent Click e
+          input def $ textInput $ def & textInputConfig_placeholder |~ "Search..."
+          b <- analyzeButton
+          response <- lift $ lift $ fmapMaybe reqSuccess <$> getitem b
+          pure (b,response)
+    ui "div" mainConfig $ do
+      dynText =<< holdDyn "test" (fmap (T.pack . show) response)
 
-        input def $ textInput $ def & textInputConfig_placeholder |~ "Search..."
-        -- return ()
-        let -- url = "https://github.com/tomsmalley/semantic-reflex"
-            conf' = def & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
-                                -- & attrs |~ ("href" =: url)
 
-        b <- button conf' (text "Go")
 
-        response <- lift $ lift $ fmapMaybe reqSuccess <$> getitem b
+analyzeButton :: (MonadWidget t m) => m (Event t ())
+analyzeButton = button conf $ text "Analyze"
+  where
+    conf = def & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
 
-        dynText =<< holdDyn "test" (fmap (T.pack . show) response)
-
-   --       fmap (T.pack . show) response)
-
-        -- display response
-        -- output <- getitem analyzeButton  --  fmapMaybe resSuccess <$> getitem analyzeButton
-        -- display output
-
-{-
--- analyzeButton :: (SupportsServantReflex t m, MonadWidget t m) => m ()
-analyzeButton = button conf $ do
-  -- icon "github" def
-  text "Analyze"
- where
-  url = "https://github.com/tomsmalley/semantic-reflex"
-  conf = def
-    & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
-    & attrs |~ ("href" =: url)
--}
 
 {-
   let sections = M.insert Nothing intro $ M.fromList
