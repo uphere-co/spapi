@@ -1,1 +1,0 @@
-../../dist-ghcjs/build/x86_64-linux/ghcjs-0.2.1/semantic-reflex-example-0.1/c/semantic-reflex-example/build/semantic-reflex-example/semantic-reflex-example.jsexe/all.js

@@ -20,10 +20,11 @@ in
 
 {
   packages = {
-    common = ./common;
-    backend = ./backend;
+    spapi-common = ./spapi-common;
+    spapi-server = ./spapi-server;
     semantic-reflex = ./semantic-reflex;
-    semantic-reflex-example = ./semantic-reflex-example;
+    servant-reflex = ./servant-reflex;
+    spapi-reflex = ./spapi-reflex;
   };
 
 
@@ -82,7 +83,7 @@ in
             in if ghc.ghc.isGhcjs or false then [] else [ corenlpenv ] ;
 
   shells = {
-    ghc8_2_1 = ["common" "backend" ];
-    ghcjs = ["common" "semantic-reflex" "semantic-reflex-example" "servant-reflex" ];
+    ghc8_2_1 = ["spapi-common" "spapi-server" ];
+    ghcjs = ["spapi-common" "semantic-reflex" "spapi-reflex" "servant-reflex" ];
   };
 })

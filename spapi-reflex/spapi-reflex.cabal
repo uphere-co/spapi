@@ -1,10 +1,10 @@
-name:                semantic-reflex-example
+name:                spapi-reflex
 version:             0.1
 license:             BSD3
 license-file:        LICENSE
-synopsis:            Examples for the semantic-reflex library
-author:              Tom Smalley
-maintainer:          tfsmalley@gmail.com
+synopsis:            SPAPI javascript client written in reflex
+author:              Ian-Woo Kim
+maintainer:          ianwookim@gmail.com
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
@@ -64,7 +64,7 @@ library
     , hscolour
     , template-haskell
 
-    , common
+    , spapi-common
 
   if impl(ghcjs)
     build-depends: ghcjs-base
@@ -74,13 +74,13 @@ library
 
   default-language:    Haskell2010
 
-executable semantic-reflex-example
+executable spapi-reflex
   main-is: Main.hs
   hs-source-dirs: .
   default-language: Haskell2010
   build-depends:
       base >= 4.8 && < 4.10
-    , semantic-reflex-example
+    , spapi-reflex
   if !impl(ghcjs)
     build-depends:
         semantic-reflex
