@@ -8,8 +8,8 @@ import           Data.Aeson         (FromJSON(..),ToJSON(..))
 import           GHC.Generics       (Generic)
 import           Servant.API
 
-import           NLP.Semantics.Type (MeaningTree)
-
+-- import           NLP.Semantics.Type (MeaningTree)
+import           SemanticParserAPI.Type (APIResult)
 
 {- 
 data Item = Item { itemId :: Integer
@@ -23,4 +23,4 @@ instance FromJSON Item
 
 type API = "servant" :> Raw :<|> RESTAPI
 
-type RESTAPI = "item" :> Get '[JSON] [MeaningTree]
+type RESTAPI = "item" :> Get '[JSON] APIResult

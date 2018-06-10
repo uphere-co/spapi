@@ -18,10 +18,13 @@ library
   ghc-options:         -Wall -O2
   exposed-modules:     API
                        Lib
+                       SemanticParserAPI.Type
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.11
                      , aeson
+                     , lens
                      , servant
+                     , text
                      , transformers
                      --
                      , semantic-types
