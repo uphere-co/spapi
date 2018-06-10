@@ -1,35 +1,37 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE Rank2Types            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE RecursiveDo           #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeApplications      #-}
 
-{-# OPTIONS_GHC -Wno-name-shadowing -Wno-unused-do-bind #-}
+{-# OPTIONS_GHC -Wno-name-shadowing -Wno-unused-do-bind -fprint-explicit-kinds #-}
 
 module Example where
 
 import Control.Monad (void, (<=<))
+import Control.Monad.Trans.Class (lift)
 import Data.Bool (bool)
 import Data.Foldable (for_)
+import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.Monoid ((<>))
+import Data.Proxy (Proxy(..))
 import Data.Text (Text)
+import qualified Data.Text as T
 import Reflex.Dom.SemanticUI
 import Reflex.Dom.Core (text)
 import Reflex.Dom.Routing.Writer
 import Reflex.Dom.Routing.Nested
 import Language.Javascript.JSaddle hiding ((!!))
 
-import qualified Data.Map as M
-import qualified Data.Text as T
 
 import Example.QQ
 import Example.Common
@@ -49,6 +51,17 @@ import Example.Section.Message (messages)
 import Example.Section.Progress (progressSection)
 import Example.Section.RadioGroup (radioGroups)
 import Example.Section.Transition (transitions)
+
+
+import API
+import Servant.Reflex
+
+api :: Proxy API
+api = Proxy
+
+
+restAPI :: Proxy RESTAPI
+restAPI = Proxy
 
 data Category t m = Category
   { categoryName :: Text
@@ -198,6 +211,7 @@ toId = T.intercalate "-" . T.words . T.toLower
 main :: JSM ()
 main = mainWidget runWithLoader
 
+{-
 testApp :: MonadWidget t m => m ()
 testApp = do
   tog <- toggle True <=< button def $ text "Toggle"
@@ -207,6 +221,7 @@ testApp = do
         text $ "Dynamic " <> tshow i
     True -> for_ [1 :: Int ..2000] $ \i -> button def $ text $ "Static " <> tshow i
   pure ()
+-}
 
 runWithLoader :: MonadWidget t m => m ()
 runWithLoader = do
@@ -222,27 +237,52 @@ loadingDimmer evt =
     (def & action_event ?~ (Transition Fade def <$ evt))) $
     divClass "ui huge text loader" $ text "Loading semantic-reflex docs..."
 
-app :: forall t m. MonadWidget t m => m ()
-app = runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ do
+app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
+app = do
 
-  -- Header
-  segment (def & attrs |~ ("id" =: "masthead") & segmentConfig_vertical |~ True) $
-    divClass "ui container" $ do
-      let conf = def
-            & headerConfig_preContent ?~ semanticLogo
-            & style |~ Style "cursor: pointer"
-      (e, _) <- pageHeader' H1 conf $ do
-        text "UpHere Semantic Parser"
-        subHeader $ text "Semantic Parser with Reuters article analysis"
-      tellRoute $ [] <$ domEvent Click e
-      -- hackageButton
-      -- githubButton
+  runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ mdo
+    url <- baseUrlWidget
 
-      input def $ textInput $ def & textInputConfig_placeholder |~ "Search..."
-      analyzeButton
+    let getitem = client
+                    restAPI
+                    (Proxy :: Proxy m) -- (RouteWriterT t Text (RouteT t Text m)))
+                    (Proxy :: Proxy ())
+                    url -- (Proxy :: Proxy '[JSON]) url
 
-analyzeButton :: MonadWidget t m => m ()
-analyzeButton = void $ button conf $ do
+    -- Header
+    segment (def & attrs |~ ("id" =: "masthead") & segmentConfig_vertical |~ True) $
+      divClass "ui container" $ do
+        let conf = def
+              & headerConfig_preContent ?~ semanticLogo
+              & style |~ Style "cursor: pointer"
+        (e, _) <- pageHeader' H1 conf $ do
+          text "UpHere Semantic Parser"
+          subHeader $ text "Semantic Parser with Reuters article analysis"
+        tellRoute $ [] <$ domEvent Click e
+        -- hackageButton
+        -- githubButton
+
+        input def $ textInput $ def & textInputConfig_placeholder |~ "Search..."
+        -- return ()
+        let -- url = "https://github.com/tomsmalley/semantic-reflex"
+            conf' = def & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
+                                -- & attrs |~ ("href" =: url)
+
+        b <- button conf' (text "Go")
+
+        response <- lift $ lift $ fmapMaybe reqSuccess <$> getitem b
+
+        dynText =<< holdDyn "test" (fmap (T.pack . show) response)
+
+   --       fmap (T.pack . show) response)
+
+        -- display response
+        -- output <- getitem analyzeButton  --  fmapMaybe resSuccess <$> getitem analyzeButton
+        -- display output
+
+{-
+-- analyzeButton :: (SupportsServantReflex t m, MonadWidget t m) => m ()
+analyzeButton = button conf $ do
   -- icon "github" def
   text "Analyze"
  where
@@ -250,9 +290,9 @@ analyzeButton = void $ button conf $ do
   conf = def
     & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
     & attrs |~ ("href" =: url)
+-}
 
-
-{- 
+{-
   let sections = M.insert Nothing intro $ M.fromList
         $ mapMaybe (\(name, _, mSection) -> (,) (Just $ toId name) <$> mSection)
         $ concatMap categoryItems progressTable
@@ -318,5 +358,3 @@ analyzeButton = void $ button conf $ do
 semanticLogo :: MonadWidget t m => m ()
 semanticLogo = image (def & imageConfig_shape |?~ Rounded) $ Left $ Img url def
   where url = "https://semantic-ui.com/images/logo.png"
-
-

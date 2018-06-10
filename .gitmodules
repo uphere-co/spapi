@@ -1,0 +1,6 @@
+[submodule "reflex-platform"]
+	path = reflex-platform
+	url = https://github.com/reflex-frp/reflex-platform
+[submodule "servant-reflex"]
+	path = servant-reflex
+	url = git@github.com:imalsogreg/servant-reflex.git

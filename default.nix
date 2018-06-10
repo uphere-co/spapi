@@ -83,6 +83,6 @@ in
 
   shells = {
     ghc8_2_1 = ["common" "backend" ];
-    ghcjs = ["common" "semantic-reflex" "semantic-reflex-example" ];
+    ghcjs = ["common" "semantic-reflex" "semantic-reflex-example" "servant-reflex" ];
   };
 })

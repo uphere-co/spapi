@@ -3,3 +3,4 @@ packages:
   common/
   semantic-reflex/
   semantic-reflex-example/
+  servant-reflex/

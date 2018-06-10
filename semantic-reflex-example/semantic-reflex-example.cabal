@@ -53,6 +53,7 @@ library
     , reflex-dom-nested-routing
     , random
     , semantic-reflex
+    , servant-reflex
     , transformers
     , text
 
@@ -62,6 +63,8 @@ library
     , haskell-src-meta
     , hscolour
     , template-haskell
+
+    , common
 
   if impl(ghcjs)
     build-depends: ghcjs-base
@@ -87,4 +90,3 @@ executable semantic-reflex-example
   if impl(ghcjs)
     ghc-options: -dedupe
     cpp-options: -DGHCJS_GC_INTERVAL=60000
-

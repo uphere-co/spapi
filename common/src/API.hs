@@ -16,5 +16,6 @@ data Item = Item { itemId :: Integer
 instance ToJSON Item
 instance FromJSON Item
 
-type API = "servant" :> Raw :<|>
-           "item" :> Get '[JSON] Item
+type API = "servant" :> Raw :<|> RESTAPI
+
+type RESTAPI = "item" :> Get '[JSON] () -- Item
