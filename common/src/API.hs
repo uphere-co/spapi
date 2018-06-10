@@ -18,4 +18,4 @@ instance FromJSON Item
 
 type API = "servant" :> Raw :<|> RESTAPI
 
-type RESTAPI = "item" :> Get '[JSON] () -- Item
+type RESTAPI = "item" :> Get '[JSON] Item
