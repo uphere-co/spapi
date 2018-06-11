@@ -275,12 +275,7 @@ app = do
       paragraph $ do
         text "Enter a sentence and then you will get a semantic analysis."
       response <- paragraph $ do
-        (ti,btn) <- input (def & inputConfig_fluid |~ True
-                               & inputConfig_action |?~ RightAction) $ do
-          ti <- textInput $ def & textInputConfig_placeholder |~ "Sentence..."
-          btn <- analyzeButton
-          pure (ti,btn)
-        -- b <- analyzeButton
+        (ti,btn) <- analyzeInput
         let inputsent = fmap (Right . InputSentence) (value ti)
         lift $ lift $ fmapMaybe reqSuccess <$> postanalysis inputsent btn
       paragraph $ do
@@ -290,6 +285,14 @@ app = do
         src <- holdDyn "" (fmap extractPNG response)
         img (Dyn src) def
 
+
+analyzeInput :: (MonadWidget t m) => m (TextInput t,Event t ())
+analyzeInput =
+  input (def & inputConfig_fluid |~ True
+             & inputConfig_action |?~ RightAction) $ do
+    ti <- textInput $ def & textInputConfig_placeholder |~ "Sentence..."
+    btn <- analyzeButton
+    pure (ti,btn)
 
 
 analyzeButton :: (MonadWidget t m) => m (Event t ())
