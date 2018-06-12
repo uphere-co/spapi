@@ -367,8 +367,7 @@ mkExampleDropdown =
     foldMap (\(t,_) -> t =: text t) exampleData -- (zip [1..] exampleData)
 
 app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
-app = do
-
+app =
   runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ mdo
     let postanalysis = client
                          restAPI
@@ -394,6 +393,35 @@ app = do
     -- Main
 
     ui "div" mainConfig $ do
+
+      -- Menu
+      let s = Style "overflow: auto"
+      rail RightRail (def & railConfig_dividing |~ True & style |~ s) $ sticky def $ do
+        menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $
+          text "Sentence analysis"
+
+        menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $
+          text "Reuters Archive"
+
+        divider $ def & dividerConfig_hidden |~ True
+
+{-
+        (e, _) <- pageHeader' H4 linkHeaderConfig $ text "Introduction"
+        tellRoute $ [] <$ domEvent Click e
+        for_ (progressTable @t @m) $ \Category {..} -> mdo
+          (e, _) <- pageHeader' H4 (categoryConfig isOpen) $ text categoryName
+          isOpen <- toggle False $ domEvent Click e
+          ui "div" (wrapper isOpen) $
+            menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $ do
+              for_ categoryItems $ \(item, status, mWidget) -> do
+                case mWidget of
+                  Nothing -> menuItem (def & menuItemConfig_disabled |~ True) $ do
+                    text $ item <> " (No examples)"
+                  Just _ -> do
+                    (e, _) <- menuItem' def $ text item
+                    tellRoute $ [toId item] <$ domEvent Click e
+-}
+
       paragraph $ do
         text "Enter a sentence and then you will get a semantic analysis."
       drpdn <- paragraph $ do
@@ -418,6 +446,28 @@ app = do
         img (Dyn src) def
 
 
+    segment (def & segmentConfig_vertical |~ True
+                & style |~ Style "padding: 0") blank
+    segment (def & segmentConfig_vertical |~ True
+                & segmentConfig_aligned |?~ CenterAligned) $ do
+      {- buttons (def & buttonsConfig_size |?~ Small) $ do
+        hackageButton
+        githubButton -}
+      text "UpHere, Inc. copyright reserved"
+      divider $ def & dividerConfig_hidden |~ True
+      text $ "Animal icons courtesy of "
+      let url = "https://www.creativetail.com/40-free-flat-animal-icons/"
+      hyperlink url $ text "Creative Tail"
+
+{-
+    withRoute $ \route -> case M.lookup route sections of
+      Nothing -> localRedirect []
+      Just (Section heading subHeading child) -> do
+        pageHeader H2 (def & style |~ Style "margin-top: 0.5em") $ do
+          text heading
+          subHeader subHeading
+        child
+-}
 
 {-
   let sections = M.insert Nothing intro $ M.fromList
