@@ -366,6 +366,9 @@ mkExampleDropdown =
   dropdown def Nothing $ TaggedStatic $
     foldMap (\(t,_) -> t =: text t) exampleData -- (zip [1..] exampleData)
 
+
+
+
 sectionSentence ::
        forall t m.
        (SupportsServantReflex t m, MonadWidget t m) =>
@@ -397,6 +400,13 @@ sectionSentence postanalysis = do
     img (Dyn src) def
 
 
+sectionReuters ::
+       forall t m.
+       (SupportsServantReflex t m, MonadWidget t m) =>
+       RouteWriterT t Text (RouteT t Text m) ()
+sectionReuters =
+  paragraph $ do
+    text "Reuters section will be here."
 
 app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
 app =
@@ -430,21 +440,27 @@ app =
       -- Menu
       let s = Style "overflow: auto"
       rail RightRail (def & railConfig_dividing |~ True & style |~ s) $ sticky def $ do
-        menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $ do
+        void . menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $ do
 
-          (e, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
+          (e1, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
             text "Sentence analysis"
-          display =<< holdDyn "" ("clicked" <$ (domEvent Click e))
-
-          menuItem (def & menuItemConfig_disabled |~ True) $
+          -- display =<< holdDyn "" ("clicked" <$ (domEvent Click e))
+          tellRoute $ ["sentence"] <$ domEvent Click e1
+          (e2, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
             text "Reuters Archive"
+          tellRoute $ ["reuters"] <$ domEvent Click e2
 
         -- menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $
 
         divider $ def & dividerConfig_hidden |~ True
 
-    sectionSentence postanalysis
+      withRoute $ \route -> do
+        case route of
+          Nothing         -> sectionSentence postanalysis
+          Just "sentence" -> sectionSentence postanalysis
+          Just "reuters"  -> sectionReuters
 
+    -- Footer
     segment (def & segmentConfig_vertical |~ True
                 & style |~ Style "padding: 0") blank
     segment (def & segmentConfig_vertical |~ True
