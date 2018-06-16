@@ -366,6 +366,38 @@ mkExampleDropdown =
   dropdown def Nothing $ TaggedStatic $
     foldMap (\(t,_) -> t =: text t) exampleData -- (zip [1..] exampleData)
 
+sectionSentence ::
+       forall t m.
+       (SupportsServantReflex t m, MonadWidget t m) =>
+       Client t m RESTAPI ()
+    -> RouteWriterT t Text (RouteT t Text m) ()
+sectionSentence postanalysis = do
+
+  paragraph $ do
+    text "Enter a sentence and then you will get a semantic analysis."
+  drpdn <- paragraph $ do
+    text "Example sentences: "
+    mkExampleDropdown
+  let drpdnevent :: Event t Text
+      drpdnevent =
+        let dyn0 = value drpdn
+            dyn1 = fmap (>>= flip lookup exampleData) dyn0
+            ev0 = updated dyn1
+        in fmap (fromMaybe "") ev0
+
+  response <- paragraph $ do
+    (ti,btn) <- analyzeInput drpdnevent
+    let inputsent = fmap (Right . InputSentence) (value ti)
+    lift $ lift $ fmapMaybe reqSuccess <$> postanalysis inputsent btn
+  paragraph $ do
+    let extractPNG r = case r ^. resultPNGData of
+                         [] -> ""
+                         dat:_ -> dat ^. png_data
+    src <- holdDyn "" (fmap extractPNG response)
+    img (Dyn src) def
+
+
+
 app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
 app =
   runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ mdo
@@ -374,7 +406,8 @@ app =
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn (BasePath "/"))
-        mainConfig =  def
+
+    let mainConfig =  def
             & elConfigAttributes |~ ("id" =: "main")
             & elConfigClasses |~ "ui container"
 
@@ -397,54 +430,20 @@ app =
       -- Menu
       let s = Style "overflow: auto"
       rail RightRail (def & railConfig_dividing |~ True & style |~ s) $ sticky def $ do
-        menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $
-          text "Sentence analysis"
+        menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $ do
 
-        menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $
-          text "Reuters Archive"
+          (e, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
+            text "Sentence analysis"
+          display =<< holdDyn "" ("clicked" <$ (domEvent Click e))
+
+          menuItem (def & menuItemConfig_disabled |~ True) $
+            text "Reuters Archive"
+
+        -- menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $
 
         divider $ def & dividerConfig_hidden |~ True
 
-{-
-        (e, _) <- pageHeader' H4 linkHeaderConfig $ text "Introduction"
-        tellRoute $ [] <$ domEvent Click e
-        for_ (progressTable @t @m) $ \Category {..} -> mdo
-          (e, _) <- pageHeader' H4 (categoryConfig isOpen) $ text categoryName
-          isOpen <- toggle False $ domEvent Click e
-          ui "div" (wrapper isOpen) $
-            menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $ do
-              for_ categoryItems $ \(item, status, mWidget) -> do
-                case mWidget of
-                  Nothing -> menuItem (def & menuItemConfig_disabled |~ True) $ do
-                    text $ item <> " (No examples)"
-                  Just _ -> do
-                    (e, _) <- menuItem' def $ text item
-                    tellRoute $ [toId item] <$ domEvent Click e
--}
-
-      paragraph $ do
-        text "Enter a sentence and then you will get a semantic analysis."
-      drpdn <- paragraph $ do
-        text "Example sentences: "
-        mkExampleDropdown
-      let drpdnevent :: Event t Text
-          drpdnevent =
-            let dyn0 = value drpdn
-                dyn1 = fmap (>>= flip lookup exampleData) dyn0
-                ev0 = updated dyn1
-            in fmap (fromMaybe "") ev0
-
-      response <- paragraph $ do
-        (ti,btn) <- analyzeInput drpdnevent
-        let inputsent = fmap (Right . InputSentence) (value ti)
-        lift $ lift $ fmapMaybe reqSuccess <$> postanalysis inputsent btn
-      paragraph $ do
-        let extractPNG r = case r ^. resultPNGData of
-                             [] -> ""
-                             dat:_ -> dat ^. png_data
-        src <- holdDyn "" (fmap extractPNG response)
-        img (Dyn src) def
-
+    sectionSentence postanalysis
 
     segment (def & segmentConfig_vertical |~ True
                 & style |~ Style "padding: 0") blank
@@ -458,6 +457,10 @@ app =
       text $ "Animal icons courtesy of "
       let url = "https://www.creativetail.com/40-free-flat-animal-icons/"
       hyperlink url $ text "Creative Tail"
+
+
+
+
 
 {-
     withRoute $ \route -> case M.lookup route sections of
