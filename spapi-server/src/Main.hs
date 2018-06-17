@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving  #-}
 
 module Main where
 
@@ -10,8 +11,10 @@ import           Control.Distributed.Process.Lifted  (SendPort,spawnLocal)
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (forever,void)
 import           Control.Monad.IO.Class              (liftIO)
+import           Data.Aeson                          (eitherDecodeStrict)
 import qualified Data.ByteString.Base64        as B64
 import qualified Data.ByteString.Char8         as B
+import           Data.Foldable                       (forM_)
 import qualified Data.HashMap.Strict           as HM
 import qualified Data.IntMap                   as IM
 import           Data.Maybe                          (fromMaybe)
@@ -53,10 +56,13 @@ import           CloudHaskell.Util                   (LogProcess
                                                      ,onesecond,tellLog,queryProcess
                                                      ,client,mainP,initP)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
-                                                     ,ResultSentence(..))
+                                                     ,ResultSentence(..)
+                                                     ,ComputeConfig(..), NetworkConfig(..)
+                                                     )
 import           SemanticParserAPI.CLI.Client        (consoleClient)
 import           SemanticParserAPI.Type              (InputSentence(..),PNGData(..),APIResult(..)
-                                                     ,DefRoot(..),CContent(..),EContent(..))
+                                                     ,DefRoot(..),CContent(..),EContent(..)
+                                                     )
 --
 import           API
 
@@ -162,22 +168,25 @@ main = do
 
   -- TODO: move this to configuration
   let framedir = "/data/groups/uphere/data/NLP/FrameNet/1.7/fndata/fndata-1.7/frame"
-  let rolemapfile = "/home/wavewave/repo/srcp/semantic-role-labeler/lexicon-builder/mapping/final.txt"
+      rolemapfile = "/home/wavewave/repo/srcp/semantic-role-labeler/lexicon-builder/mapping/final.txt"
+      configfile = "/home/wavewave/repo/srcp/uphere-ops/api-dev/compute-config.json.mark"
 
   framedb <- loadFrameData framedir
   rolemap <- loadRoleInsts rolemapfile
+  econfig :: Either String ComputeConfig <- eitherDecodeStrict <$> B.readFile configfile
+  -- print econfig
+  forM_ econfig $ \config -> do
+    let cport  = port  (computeClient config) -- 12933
+        chostg = hostg (computeClient config) --  "127.0.0.1"
+        chostl = hostl (computeClient config) -- "127.0.0.1"
+        shostg = hostg (computeServer config) -- "127.0.0.1"
+        sport  = port  (computeServer config) -- 12930
 
-  let port = 12933
-      hostg = "127.0.0.1"
-      hostl = "127.0.0.1"
-      serverip = "127.0.0.1"
-      serverport = 12930
+    forkIO $ client (cport,chostg,chostl,shostg,sport) (initP (mainP (webClient qqvar)))
 
-  forkIO $ client (port,hostg,hostl,serverip,serverport) (initP (mainP (webClient qqvar)))
-
-  etagcontext <- defaultETagContext False
-  run 8080 $
-    etag etagcontext NoMaxAge  $
-      serve api (serveDirectoryFileServer d :<|>
-                 postAnalysis framedb rolemap qqvar
-                )
+    etagcontext <- defaultETagContext False
+    run 8080 $
+      etag etagcontext NoMaxAge  $
+        serve api (serveDirectoryFileServer d :<|>
+                   postAnalysis framedb rolemap qqvar
+                  )
