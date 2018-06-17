@@ -16,7 +16,9 @@ library
   hs-source-dirs: src
 
   exposed-modules:
-    Example
+      ARBView
+    , Example
+    , Util
   other-modules:
       Example.StateEnum
     , Example.CountryEnum
@@ -64,6 +66,13 @@ library
     , hscolour
     , template-haskell
 
+    --
+    , aeson
+    , hashable
+    , time
+    , unordered-containers
+    --
+    , semantic-types
     , spapi-common
 
   if impl(ghcjs)

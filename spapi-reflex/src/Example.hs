@@ -404,9 +404,19 @@ sectionReuters ::
        forall t m.
        (SupportsServantReflex t m, MonadWidget t m) =>
        RouteWriterT t Text (RouteT t Text m) ()
-sectionReuters =
+sectionReuters = do
   paragraph $ do
     text "Reuters section will be here."
+  paragraph $ do
+    elAttr "div" ("class" =: "box_analytics") $ do
+      elAttr "div" ("class" =: "side_l") $ do
+        elAttr "div" ("class" =: "in_box ty01") $ do
+          el "dl" $ do
+            el "dt" $ do
+              elAttr "span" ("class" =: "tit") $
+                text "abc"
+  pure ()
+
 
 app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
 app =
@@ -450,8 +460,6 @@ app =
             text "Reuters Archive"
           tellRoute $ ["reuters"] <$ domEvent Click e2
 
-        -- menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $
-
         divider $ def & dividerConfig_hidden |~ True
 
       withRoute $ \route -> do
@@ -465,9 +473,6 @@ app =
                 & style |~ Style "padding: 0") blank
     segment (def & segmentConfig_vertical |~ True
                 & segmentConfig_aligned |?~ CenterAligned) $ do
-      {- buttons (def & buttonsConfig_size |?~ Small) $ do
-        hackageButton
-        githubButton -}
       text "UpHere, Inc. copyright reserved"
       divider $ def & dividerConfig_hidden |~ True
       text $ "Animal icons courtesy of "
@@ -478,78 +483,8 @@ app =
 
 
 
-{-
-    withRoute $ \route -> case M.lookup route sections of
-      Nothing -> localRedirect []
-      Just (Section heading subHeading child) -> do
-        pageHeader H2 (def & style |~ Style "margin-top: 0.5em") $ do
-          text heading
-          subHeader subHeading
-        child
--}
 
-{-
-  let sections = M.insert Nothing intro $ M.fromList
-        $ mapMaybe (\(name, _, mSection) -> (,) (Just $ toId name) <$> mSection)
-        $ concatMap categoryItems progressTable
-      mainConfig =  def
-        & elConfigAttributes |~ ("id" =: "main")
-        & elConfigClasses |~ "ui container"
-      linkHeaderConfig = def
-        & headerConfig_sub |~ True
-        & headerConfig_preContent ?~ icon "info" (def & iconConfig_color |?~ Teal)
-        & style |~ Style "cursor: pointer"
-      categoryConfig isOpen = linkHeaderConfig
-        & headerConfig_preContent ?~ icon (Dyn $ bool "right angle" "down angle" <$> isOpen) def
-      wrapper isOpen = def
-        & style |~ Style "margin-top: 1em"
-        & action ?~ (def
-          & action_event ?~ (Transition Instant def <$ updated isOpen)
-          & action_initialDirection .~ Out)
 
-  -- Main content
-  ui "div" mainConfig $ do
-
-    -- Menu
-    let s = Style "overflow: auto"
-    rail RightRail (def & railConfig_dividing |~ True & style |~ s) $ sticky def $ do
-      (e, _) <- pageHeader' H4 linkHeaderConfig $ text "Introduction"
-      tellRoute $ [] <$ domEvent Click e
-      for_ (progressTable @t @m) $ \Category {..} -> mdo
-        (e, _) <- pageHeader' H4 (categoryConfig isOpen) $ text categoryName
-        isOpen <- toggle False $ domEvent Click e
-        ui "div" (wrapper isOpen) $
-          menu (def & menuConfig_vertical |~ True & menuConfig_secondary |~ True) $ do
-            for_ categoryItems $ \(item, status, mWidget) -> do
-              case mWidget of
-                Nothing -> menuItem (def & menuItemConfig_disabled |~ True) $ do
-                  text $ item <> " (No examples)"
-                Just _ -> do
-                  (e, _) <- menuItem' def $ text item
-                  tellRoute $ [toId item] <$ domEvent Click e
-      divider $ def & dividerConfig_hidden |~ True
-
-    withRoute $ \route -> case M.lookup route sections of
-      Nothing -> localRedirect []
-      Just (Section heading subHeading child) -> do
-        pageHeader H2 (def & style |~ Style "margin-top: 0.5em") $ do
-          text heading
-          subHeader subHeading
-        child
-
-  -- Footer
-  segment (def & segmentConfig_vertical |~ True
-              & style |~ Style "padding: 0") blank
-  segment (def & segmentConfig_vertical |~ True
-              & segmentConfig_aligned |?~ CenterAligned) $ do
-    buttons (def & buttonsConfig_size |?~ Small) $ do
-      hackageButton
-      githubButton
-    divider $ def & dividerConfig_hidden |~ True
-    text $ "Animal icons courtesy of "
-    let url = "https://www.creativetail.com/40-free-flat-animal-icons/"
-    hyperlink url $ text "Creative Tail"
--}
 
 semanticLogo :: MonadWidget t m => m ()
 semanticLogo = image (def & imageConfig_shape |?~ Rounded) $ Left $ Img url def
