@@ -18,6 +18,7 @@ library
   exposed-modules:
       ARBView
     , Example
+    , Sample
     , Util
   other-modules:
       Example.StateEnum
