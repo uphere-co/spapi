@@ -26,6 +26,9 @@ import qualified Data.Text.IO                  as TIO
 import qualified Data.Text.Lazy                as TL
 import           Network.Wai.Handler.Warp            (run)
 import           Network.Wai.Middleware.ETag
+import           Options.Applicative                 (Parser,ParserInfo,info,fullDesc,progDesc
+                                                     ,help,short,long,execParser,strOption
+                                                     )
 import           Servant.API                         ((:<|>)((:<|>)))
 import           Servant.Utils.StaticFiles           (serveDirectoryFileServer)
 import           Servant.Server                      (Handler,serve)
@@ -160,8 +163,29 @@ postAnalysis framedb rolemap qqvar (InputSentence sent) = do
 
   -- pure (Item 0 (show mgs))
 
+
+data ServerConfig = ServerConfig {
+                      computeConfig :: FilePath
+                    , langConfig :: FilePath
+                    , staticDir :: FilePath
+                    }
+                  deriving (Show)
+
+
+pOptions :: Parser ServerConfig
+pOptions = ServerConfig <$> strOption (long "compute" <> short 'c' <> help "Compute engine server/client configuration")
+                        <*> strOption (long "lang"    <> short 'l' <> help "Language engine server/client configuration")
+                        <*> strOption (long "static"  <> short 's' <> help "Directory of static html files")
+
+serverConfig :: ParserInfo ServerConfig
+serverConfig = info pOptions (fullDesc <> progDesc "spapi-server")
+
+
+main :: IO ()
 main = do
-  (d:_) <- getArgs
+  cfg <- execParser serverConfig
+
+  -- (d:_) <- getArgs
   -- putStrLn "Serving on localhost:8080/static/, visit http://localhost:8080/static/index.html"
 
   qqvar <- newTVarIO emptyQQ
@@ -169,7 +193,7 @@ main = do
   -- TODO: move this to configuration
   let framedir = "/data/groups/uphere/data/NLP/FrameNet/1.7/fndata/fndata-1.7/frame"
       rolemapfile = "/home/wavewave/repo/srcp/semantic-role-labeler/lexicon-builder/mapping/final.txt"
-      configfile = "/home/wavewave/repo/srcp/uphere-ops/api-dev/compute-config.json.mark"
+      configfile = computeConfig cfg -- "/home/wavewave/repo/srcp/uphere-ops/api-dev/compute-config.json.mark"
 
   framedb <- loadFrameData framedir
   rolemap <- loadRoleInsts rolemapfile
@@ -187,6 +211,6 @@ main = do
     etagcontext <- defaultETagContext False
     run 8080 $
       etag etagcontext NoMaxAge  $
-        serve api (serveDirectoryFileServer d :<|>
+        serve api (serveDirectoryFileServer (staticDir cfg)  :<|>
                    postAnalysis framedb rolemap qqvar
                   )

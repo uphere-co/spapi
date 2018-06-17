@@ -25,6 +25,7 @@ executable spapi-server
                      , bytestring
                      , directory
                      , lens
+                     , optparse-applicative
                      , process
                      , servant
                      , servant-server
