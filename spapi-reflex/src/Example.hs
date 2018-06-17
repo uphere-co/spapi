@@ -270,17 +270,32 @@ mkExampleDropdown =
 arbView :: (MonadWidget t m) => ARB -> m ()
 arbView arb =
   -- paragraph $ do
-    elAttr "div" ("class" =: "box_analytics") $ do
-      elAttr "div" ("class" =: "side_l") $ do
-        elAttr "div" ("class" =: "in_box ty01") $ do
+    elClass "div" "box_analytics" $ do
+      elClass "div" "side_l" $ do
+        elClass "div" "in_box ty01" $ do
           el "dl" $ do
             el "dt" $ do
-              elAttr "span" ("class" =: "tit") $
-                text (T.pack (show arb))
+              elClass "span" "tit" $ do
+                let blocks = formatARB arb
+                -- mapM_ (paragraph . text . T.pack . show) blocks
+                mapM_ arbBlock blocks
+                -- text (T.pack (show arb))
                 -- text "abc"
                 -- display arb -- (fmap show arbs)
 
 
+arbBlock :: (MonadWidget t m) => ARBBlock -> m ()
+arbBlock (ARBBlock p t as) =
+   elClass "span" "framenet" $
+     el "div" $ do
+       elClass "span" "prep" $
+         text p
+       el "span" $
+         text t
+       mapM_ arbAnnot as
+
+arbAnnot :: (MonadWidget t m) => ARBAnnot -> m ()
+arbAnnot (ARBAnnot t a) = elClass "div" t $ text a
 
 sectionSentence ::
        forall t m.
