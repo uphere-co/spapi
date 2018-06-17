@@ -43,6 +43,7 @@ executable spapi-server
                      , compute-engine
                      , HFrameNet
                      , lexicon
+                     , lexicon-builder
                      , semantic-role-labeler
                      , semantic-types
                      --
