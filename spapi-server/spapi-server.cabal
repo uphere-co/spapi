@@ -38,9 +38,9 @@ executable spapi-server
                      , distributed-process-lifted
                      , stm
                      --
+                     , compute-engine
                      , HFrameNet
                      , lexicon
-                     , semantic-parser-api-compute
                      , semantic-role-labeler
                      , semantic-types
                      --

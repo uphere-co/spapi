@@ -162,7 +162,7 @@ main = do
 
   -- TODO: move this to configuration
   let framedir = "/data/groups/uphere/data/NLP/FrameNet/1.7/fndata/fndata-1.7/frame"
-  let rolemapfile = "/home/wavewave/repo/srcp/lexicon-builder/mapping/final.txt"
+  let rolemapfile = "/home/wavewave/repo/srcp/semantic-role-labeler/lexicon-builder/mapping/final.txt"
 
   framedb <- loadFrameData framedir
   rolemap <- loadRoleInsts rolemapfile
