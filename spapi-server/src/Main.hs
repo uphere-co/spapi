@@ -156,16 +156,12 @@ postAnalysis ::
   -> InputSentence
   -> Handler APIResult
 postAnalysis framedb rolemap qqvar (InputSentence sent) = do
-  -- let sent = "I sent a letter to him."
   CR_Sentence (ResultSentence _ tokss mgs) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
-  -- liftIO $ print mgs
   dots <- liftIO $ mapM createDotGraph mgs
   let mts = concatMap (mkMeaningTree rolemap) mgs
       arbs = concatMap (mkARB rolemap) mgs
       fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
   pure (APIResult tokss mts arbs dots fns)
-
-  -- pure (Item 0 (show mgs))
 
 
 data ServerConfig = ServerConfig {
@@ -202,15 +198,11 @@ main = do
         chostl = hostl (computeClient compcfg)
         shostg = hostg (computeServer compcfg)
         sport  = port  (computeServer compcfg)
-    -- TODO: move this to configuration
-    let framedir = langcfg ^. cfg_framenet_framedir
+        framedir = langcfg ^. cfg_framenet_framedir
         rolemapfile = langcfg ^. cfg_rolemap_file
-
     framedb <- loadFrameData framedir
     rolemap <- loadRoleInsts rolemapfile
-
     forkIO $ client (cport,chostg,chostl,shostg,sport) (initP (mainP (webClient qqvar)))
-
     etagcontext <- defaultETagContext False
     run (webPort cfg) $
       etag etagcontext NoMaxAge  $
