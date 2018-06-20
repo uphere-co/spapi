@@ -58,6 +58,7 @@ import           NLP.Semantics.Type (ARB(..))
 import           SemanticParserAPI.Type (InputSentence(..)
                                         ,resultARBs
                                         ,resultPNGData
+                                        ,resultOutputText
                                         ,png_data)
 --
 import           ARBView
@@ -325,8 +326,10 @@ sectionSentence postanalysis = do
                          dat:_ -> dat ^. png_data
     src <- holdDyn "" (fmap extractPNG response)
     arbs <- holdDyn [] (fmap (^.resultARBs) response)
+    otxt <- holdDyn "" (fmap (^.resultOutputText) response)
     img (Dyn src) def
     void . dyn $ fmap (mapM_ arbView) arbs
+    display otxt
     -- for_ (sequenceA arbs) arbView
 
 

@@ -156,12 +156,12 @@ postAnalysis ::
   -> InputSentence
   -> Handler APIResult
 postAnalysis framedb rolemap qqvar (InputSentence sent) = do
-  CR_Sentence (ResultSentence _ tokss mgs) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
+  CR_Sentence (ResultSentence _ tokss mgs otxt) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
   dots <- liftIO $ mapM createDotGraph mgs
   let mts = concatMap (mkMeaningTree rolemap) mgs
       arbs = concatMap (mkARB rolemap) mgs
       fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
-  pure (APIResult tokss mts arbs dots fns)
+  pure (APIResult tokss mts arbs dots fns otxt)
 
 
 data ServerConfig = ServerConfig {
