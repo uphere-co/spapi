@@ -324,13 +324,17 @@ sectionSentence postanalysis = do
     let extractPNG r = case r ^. resultPNGData of
                          [] -> ""
                          dat:_ -> dat ^. png_data
+
     src <- holdDyn "" (fmap extractPNG response)
     arbs <- holdDyn [] (fmap (^.resultARBs) response)
     otxt <- holdDyn "" (fmap (^.resultOutputText) response)
+    el "pre" $
+      el "code" $
+        dynText otxt
+
     img (Dyn src) def
     void . dyn $ fmap (mapM_ arbView) arbs
-    display otxt
-    -- for_ (sequenceA arbs) arbView
+
 
 
 sectionReuters ::
