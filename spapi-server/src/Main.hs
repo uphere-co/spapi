@@ -72,6 +72,7 @@ import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeRe
 import           SemanticParserAPI.CLI.Client        (consoleClient)
 import           SemanticParserAPI.Type              (InputSentence(..),PNGData(..),APIResult(..)
                                                      ,DefRoot(..),CContent(..),EContent(..)
+                                                     ,SVGData(..)
                                                      )
 --
 import           API
@@ -109,6 +110,9 @@ withTempFile (base,ext) i action = do
   removeFile file
   pure r
 
+
+uriEncode mimetype bstr = TE.decodeUtf8 ("data:" <> mimetype <> ";base64," <> B64.encode bstr)
+
 createDotGraph :: MeaningGraph -> IO PNGData
 createDotGraph mg = do
   let dotstr = dotMeaningGraph Nothing mg
@@ -121,8 +125,18 @@ createDotGraph mg = do
   -- TODO use temporary name and remove
   bstr <- B.readFile "test.png"
   setCurrentDirectory cdir
-  let pngdata = PNGData (TE.decodeUtf8 ("data:image/png;base64," <> B64.encode bstr))
-  return pngdata
+  let pngdata = PNGData (uriEncode "image/png" bstr)
+  -- let pngdata = PNGData (TE.decodeUtf8 ("data:image/png;base64," <> B64.encode bstr))
+  pure pngdata
+
+
+createOGDFSVG :: (Int,MeaningGraph) -> IO SVGData
+createOGDFSVG (i,mg) =
+  withTempFile ("test","svg") i $ \file -> do
+    mkOGDFSVG file mg
+    bstr <- B.readFile file
+    let svgdata = SVGData (uriEncode "image/svg+xml" bstr)
+    pure svgdata
 
 
 allFrames :: MeaningTree -> [Text]
@@ -170,15 +184,11 @@ postAnalysis ::
 postAnalysis framedb rolemap qqvar (InputSentence sent) = do
   CR_Sentence (ResultSentence _ tokss mgs otxt) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
   dots <- liftIO $ mapM createDotGraph mgs
-  forM_ (zip [1..] mgs) $ \(i,mg) -> liftIO $ do
-    withTempFile ("test","svg") i $ \file -> do
-      mkOGDFSVG file mg
-      str <- readFile file
-      putStrLn str
+  svgs <- liftIO $ mapM createOGDFSVG (zip [1..] mgs)
   let mts = concatMap (mkMeaningTree rolemap) mgs
       arbs = concatMap (mkARB rolemap) mgs
       fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
-  pure (APIResult tokss mts arbs dots fns otxt)
+  pure (APIResult tokss mts arbs dots svgs fns otxt)
 
 
 data ServerConfig = ServerConfig {

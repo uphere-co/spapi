@@ -58,8 +58,10 @@ import           NLP.Semantics.Type (ARB(..))
 import           SemanticParserAPI.Type (InputSentence(..)
                                         ,resultARBs
                                         ,resultPNGData
+                                        ,resultSVGData
                                         ,resultOutputText
-                                        ,png_data)
+                                        ,png_data
+                                        ,svg_data)
 --
 import           ARBView
 import           Sample
@@ -321,18 +323,24 @@ sectionSentence postanalysis = do
     let inputsent = fmap (Right . InputSentence) (value ti)
     lift $ lift $ fmapMaybe reqSuccess <$> postanalysis inputsent btn
   paragraph $ do
-    let extractPNG r = case r ^. resultPNGData of
+    let -- TODO: show all graphs, not first one
+        extractPNG r = case r ^. resultPNGData of
                          [] -> ""
                          dat:_ -> dat ^. png_data
+        extractSVG r = case r ^. resultSVGData of
+                         [] -> ""
+                         dat:_ -> dat ^. svg_data
 
-    src <- holdDyn "" (fmap extractPNG response)
+    srcpng <- holdDyn "" (fmap extractPNG response)
+    srcsvg <- holdDyn "" (fmap extractSVG response)
     arbs <- holdDyn [] (fmap (^.resultARBs) response)
     otxt <- holdDyn "" (fmap (^.resultOutputText) response)
     el "pre" $
       el "code" $
         dynText otxt
 
-    img (Dyn src) def
+    img (Dyn srcpng) def
+    img (Dyn srcsvg) def
     void . dyn $ fmap (mapM_ arbView) arbs
 
 
