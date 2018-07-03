@@ -23,6 +23,7 @@ executable spapi-server
                      , aeson
                      , base64-bytestring
                      , bytestring
+                     , filepath
                      , directory
                      , lens
                      , optparse-applicative

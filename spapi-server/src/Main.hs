@@ -35,7 +35,9 @@ import           Servant.Utils.StaticFiles           (serveDirectoryFileServer)
 import           Servant.Server                      (Handler,serve)
 import           System.Directory                    (getCurrentDirectory
                                                      ,setCurrentDirectory
-                                                     ,getTemporaryDirectory)
+                                                     ,getTemporaryDirectory
+                                                     ,removeFile)
+import           System.FilePath                     ((</>),(<.>))
 import           System.Environment                  (getArgs)
 import           System.Process                      (readProcess)
 -- nlp layer
@@ -52,6 +54,7 @@ import           NLP.Semantics.Type                  (MeaningRoleContent(..),Mea
                                                      ,mr_content,po_main)
 import           SRL.Analyze.ARB                     (mkARB)
 import           SRL.Analyze.Format                  (dotMeaningGraph)
+import           SRL.Analyze.Format.OGDF             (mkOGDFSVG)
 import           SRL.Analyze.MeaningTree             (mkMeaningTree)
 import           SRL.Analyze.Type                    (AnalyzePredata,DocStructure,MeaningGraph
                                                      ,analyze_framedb,analyze_rolemap
@@ -158,6 +161,13 @@ postAnalysis ::
 postAnalysis framedb rolemap qqvar (InputSentence sent) = do
   CR_Sentence (ResultSentence _ tokss mgs otxt) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
   dots <- liftIO $ mapM createDotGraph mgs
+  forM_ (zip [1..] mgs) $ \(i,mg) -> liftIO $ do
+    tmpdir <- getTemporaryDirectory
+    let file = tmpdir </> "test" ++ show i <.> "svg"
+    mkOGDFSVG file mg
+    str <- readFile file
+    putStrLn str
+    removeFile file
   let mts = concatMap (mkMeaningTree rolemap) mgs
       arbs = concatMap (mkARB rolemap) mgs
       fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
