@@ -101,6 +101,14 @@ webClient qqvar sc = do
       tellLog (show test)
 
 
+withTempFile :: (String,String) -> Int -> (FilePath -> IO a) -> IO a
+withTempFile (base,ext) i action = do
+  tmpdir <- getTemporaryDirectory
+  let file = tmpdir </> base ++ show i <.> ext
+  r <- action file
+  removeFile file
+  pure r
+
 createDotGraph :: MeaningGraph -> IO PNGData
 createDotGraph mg = do
   let dotstr = dotMeaningGraph Nothing mg
@@ -115,6 +123,7 @@ createDotGraph mg = do
   setCurrentDirectory cdir
   let pngdata = PNGData (TE.decodeUtf8 ("data:image/png;base64," <> B64.encode bstr))
   return pngdata
+
 
 allFrames :: MeaningTree -> [Text]
 allFrames mt = let frm0 = mt^.mt_frame
@@ -162,12 +171,10 @@ postAnalysis framedb rolemap qqvar (InputSentence sent) = do
   CR_Sentence (ResultSentence _ tokss mgs otxt) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
   dots <- liftIO $ mapM createDotGraph mgs
   forM_ (zip [1..] mgs) $ \(i,mg) -> liftIO $ do
-    tmpdir <- getTemporaryDirectory
-    let file = tmpdir </> "test" ++ show i <.> "svg"
-    mkOGDFSVG file mg
-    str <- readFile file
-    putStrLn str
-    removeFile file
+    withTempFile ("test","svg") i $ \file -> do
+      mkOGDFSVG file mg
+      str <- readFile file
+      putStrLn str
   let mts = concatMap (mkMeaningTree rolemap) mgs
       arbs = concatMap (mkARB rolemap) mgs
       fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
