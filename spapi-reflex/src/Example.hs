@@ -60,6 +60,8 @@ import           SemanticParserAPI.Type (InputSentence(..)
                                         ,resultPNGData
                                         ,resultSVGData
                                         ,resultConsoleOutput
+                                        ,outputDocStructure
+                                        ,outputMatchedFrames
                                         ,outputX'tree
                                         ,png_data
                                         ,svg_data)
@@ -88,79 +90,6 @@ data Category t m = Category
   }
 data Status = Implemented | PartiallyImplemented | NotImplemented deriving Show
 
--- | A log of the implementation progress
-progressTable :: MonadWidget t m => [Category t m]
-progressTable =
-  [ Category "Elements"
-    [ ("Button", Implemented, Just buttonSection)
-    , ("Container", PartiallyImplemented, Nothing)
-    , ("Divider", Implemented, Just dividers)
-    , ("Flag", Implemented, Just flags)
-    , ("Header", Implemented, Just headers)
-    , ("Icon", Implemented, Just iconSection)
-    , ("Image", Implemented, Nothing)
-    , ("Input", Implemented, Just inputs)
-    , ("Label", Implemented, Just labels)
-    , ("List", Implemented, Just lists)
-    , ("Loader", NotImplemented, Nothing)
-    , ("Rail", Implemented, Nothing)
-    , ("Reveal", NotImplemented, Nothing)
-    , ("Segment", Implemented, Nothing)
-    , ("Step", NotImplemented, Nothing)
-    ]
-  , Category "Collections"
-    [ ("Breadcrumb", NotImplemented, Nothing)
-    , ("Form", PartiallyImplemented, Nothing)
-    , ("Grid", NotImplemented, Nothing)
-    , ("Menu", NotImplemented, Nothing)
-    , ("Message", Implemented, Just messages)
-    , ("Table", PartiallyImplemented, Nothing)
-    ]
-  , Category "Views"
-    [ ("Advertisement", NotImplemented, Nothing)
-    , ("Card", NotImplemented, Nothing)
-    , ("Comment", NotImplemented, Nothing)
-    , ("Feed", NotImplemented, Nothing)
-    , ("Item", NotImplemented, Nothing)
-    , ("Statistic", NotImplemented, Nothing)
-    ]
-  , Category "Modules"
-    [ ("Accordion", NotImplemented, Nothing)
-    , ("Checkbox", Implemented, Just checkboxes)
-    , ("Dimmer", Implemented, Just dimmers)
-    , ("Dropdown", PartiallyImplemented, Just dropdowns)
-    , ("Embed", NotImplemented, Nothing)
-    , ("Modal", NotImplemented, Nothing)
-    , ("Nag", NotImplemented, Nothing)
-    , ("Popup", NotImplemented, Nothing)
-    , ("Progress", Implemented, Just progressSection)
-    , ("Rating", NotImplemented, Nothing)
-    , ("Search", NotImplemented, Nothing)
-    , ("Shape", NotImplemented, Nothing)
-    , ("Sidebar", NotImplemented, Nothing)
-    , ("Sticky", PartiallyImplemented, Nothing)
-    , ("Tab", NotImplemented, Nothing)
-    , ("Transition", Implemented, Just transitions)
-    ]
-  , Category "Behaviors"
-    [ ("API", NotImplemented, Nothing)
-    , ("Form Validation", NotImplemented, Nothing)
-    , ("Visibility", NotImplemented, Nothing)
-    ]
-  ]
-
-progressProgress :: forall t m. MonadWidget t m => m (Progress t m)
-progressProgress = progress (pure $ Range 0 vMax) (pure v) $ def
-  & progressConfig_color |?~ Teal
-  & progressConfig_bar ?~ PercentageBar
-  where
-    categories = progressTable :: [Category t m]
-    v = sum $ concatMap (fmap (\(_,i,_) -> implementedNum i) . categoryItems) categories
-    vMax = sum $ map ((*2) . length . categoryItems) categories
-    implementedNum = \case
-      NotImplemented -> 0
-      PartiallyImplemented -> 1
-      Implemented -> 2
 
 
 -- | Convert a component name to a css id string
@@ -210,7 +139,22 @@ mkExampleDropdown =
   dropdown def Nothing $ TaggedStatic $
     foldMap (\(t,_) -> t =: text t) exampleData
 
-
+expandableSegments :: (MonadWidget t m) => [(Text,m ())] -> m ()
+expandableSegments nws =
+  segments def $ for_ nws $ \(name,widget) -> mdo
+    open <- segment (def & segmentConfig_color |?~ Teal) $ do
+      (e, _) <- elAttr' "div" ("style" =: "cursor: pointer") $ do
+        icon' (Dyn $ bool "caret right" "caret down" <$> open) def
+        text name
+      toggle False $ domEvent Click e
+    let mkTransition dir = Transition SlideDown $ def
+          & transitionConfig_direction ?~ dir
+          & transitionConfig_duration .~ 0.3
+        actionConfig = def
+          & action_event ?~ (mkTransition . bool Out In <$> updated open)
+          & action_initialDirection .~ Out
+    segment (def & action ?~ actionConfig) $ do
+      widget
 
 
 sectionSentence ::
@@ -252,7 +196,12 @@ sectionSentence postanalysis = do
     dyn . flip fmap dmcout $ \mcout ->
       case mcout of
         Nothing -> blank
-        Just cout -> consoleBox (constDyn (cout^.outputX'tree))
+        Just cout -> do
+          expandableSegments
+            [ ("X'tree"       , consoleBox (constDyn (cout^.outputX'tree)))
+            , ("Doc structure", consoleBox (constDyn (cout^.outputDocStructure)))
+            , ("Matched Frame", consoleBox (constDyn (cout^.outputMatchedFrames)))
+            ]
 
     let conf = def & imageConfig_shape |?~ Rounded
                    & imageConfig_size |~ Just Massive
