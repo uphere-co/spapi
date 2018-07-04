@@ -161,73 +161,11 @@ progressProgress = progress (pure $ Range 0 vMax) (pure v) $ def
       PartiallyImplemented -> 1
       Implemented -> 2
 
-intro :: forall t m. (RouteWriter t Text m, MonadWidget t m) => Section t m
-intro = Section "Introduction" blank $ do
-  paragraph $ do
-    text "This library aims to provide a type safe Haskell wrapper around Semantic UI components, to allow easy construction of nice looking web applications in GHCJS. It is currently in early development and started as a fork of the "
-    hyperlink "https://github.com/reflex-frp/reflex-dom-semui" $
-      text "reflex-dom-semui"
-    text " library, although it has since been completely rewritten to remove dependencies on external JavaScript."
-
-  message (def & messageConfig_type |?~ InfoMessage) $
-    paragraph $ do
-      icon "announcement" def
-      text "The implementation of this library does not depend on the Semantic UI or jQuery JavaScript libraries."
-
-  paragraph $ text "This page serves to provide an example of the library and components in use. Examples are shown along with the code that generated them."
-
-  pageHeader H3 def $ text "Progress"
-
-  void progressProgress
-
-  -- Progress chart
-  segments def $ for_ (progressTable @t @m) $ \(Category name items) -> mdo
-
-    open <- segment (def & segmentConfig_color |?~ Teal) $ do
-      (e, _) <- elAttr' "div" ("style" =: "cursor: pointer") $ do
-        icon' (Dyn $ bool "caret right" "caret down" <$> open) def
-        text name
-      toggle False $ domEvent Click e
-
-    let mkTransition dir = Transition SlideDown $ def
-          & transitionConfig_direction ?~ dir
-          & transitionConfig_duration .~ 0.3
-        actionConfig = def
-          & action_event ?~ (mkTransition . bool Out In <$> updated open)
-          & action_initialDirection .~ Out
-
-    table (def & tableConfig_attached |?~ Attached & action ?~ actionConfig) $ do
-      thead $ tr $ do
-        th $ text "Feature"
-        th $ text "Status"
-      tbody $ for_ items $ \(item, status, mWidget) -> tr $ do
-        td $ case mWidget of
-          Nothing -> text item
-          Just _ -> hyperlink ("#" <> toId item) $ text item
-        case status of
-          Implemented -> elClass "td" "positive" $ text "Implemented"
-          NotImplemented -> elClass "td" "negative" $ text "Not implemented"
-          PartiallyImplemented -> elClass "td" "warning" $ text "Partially implemented"
-
-  pageHeader H3 def $ text "Notes"
-
-  paragraph $ text "For the common use case of config values to 'pure value', there are lenses:"
-  paragraph $ do
-    hscode $(printDefinition oneline id '(|?~))
-    hscode $(printDefinition oneline id '(|~))
-
-  paragraph $ text "In some cases (e.g. dropdowns) we want to write one function which optimises the common case of having a static list of items. For this, see the type:"
-  paragraph $ do
-    hscode $(printDefinition id id ''ActiveType)
-    hscode $(printDefinition id id ''TaggedActive)
-  paragraph $ text "This is used in the dropdown implementation."
 
 -- | Convert a component name to a css id string
 toId :: Text -> Text
 toId = T.intercalate "-" . T.words . T.toLower
 
-main :: JSM ()
-main = mainWidget runWithLoader
 
 
 runWithLoader :: MonadWidget t m => m ()
@@ -305,11 +243,19 @@ sectionSentence postanalysis = do
     srcpng <- holdDyn "" (fmap extractPNG response)
     srcsvg <- holdDyn "" (fmap extractSVG response)
     arbs <- holdDyn [] (fmap (view resultARBs) response)
-    cout <- holdDyn def $ fmap (view resultConsoleOutput) response
-    --  (fmap (^.resultOutputText) response)
-    el "pre" $
-      el "code" $
-        dynText (fmap (view outputX'tree) cout)
+    dmcout <- holdDyn Nothing $ fmap (Just . view resultConsoleOutput) response
+    let widget dcout =
+          segment (def & segmentConfig_inverted |~ True
+                         & style |~ Style "overflow-x: scroll"
+                    ) $ do
+              el "pre" $
+                el "code" $
+                  dynText (fmap (view outputX'tree) dcout)
+
+    dyn . flip fmap dmcout $ \mcout ->
+      case mcout of
+        Nothing -> blank
+        Just cout -> widget (constDyn cout)
 
     let conf = def & imageConfig_shape |?~ Rounded
                    & imageConfig_size |~ Just Massive
@@ -396,3 +342,6 @@ app =
 semanticLogo :: MonadWidget t m => m ()
 semanticLogo = image (def & imageConfig_shape |?~ Rounded) $ Left $ Img url def
   where url = "https://semantic-ui.com/images/logo.png"
+
+main :: JSM ()
+main = mainWidget runWithLoader
