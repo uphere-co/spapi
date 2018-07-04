@@ -268,7 +268,7 @@ analyzeButton = button conf $ text "Analyze"
 mkExampleDropdown :: (MonadWidget t m) => m (Dropdown t (Maybe Text))
 mkExampleDropdown =
   dropdown def Nothing $ TaggedStatic $
-    foldMap (\(t,_) -> t =: text t) exampleData -- (zip [1..] exampleData)
+    foldMap (\(t,_) -> t =: text t) exampleData
 
 arbView :: (MonadWidget t m) => ARB -> m ()
 arbView arb =
@@ -339,8 +339,13 @@ sectionSentence postanalysis = do
       el "code" $
         dynText otxt
 
-    img (Dyn srcpng) def
-    img (Dyn srcsvg) def
+    let conf = def & imageConfig_shape |?~ Rounded
+                   & imageConfig_size |~ Just Massive
+                   & style |~ Style "overflow: hidden"
+    paragraph $
+      image conf (Right (img (Dyn srcpng) def))
+    paragraph $
+      image conf (Right (img (Dyn srcsvg) def))
     void . dyn $ fmap (mapM_ arbView) arbs
 
 
