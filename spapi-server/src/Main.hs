@@ -56,9 +56,12 @@ import           SRL.Analyze.ARB                     (mkARB)
 import           SRL.Analyze.Format                  (dotMeaningGraph)
 import           SRL.Analyze.Format.OGDF             (mkOGDFSVG)
 import           SRL.Analyze.MeaningTree             (mkMeaningTree)
-import           SRL.Analyze.Type                    (AnalyzePredata,DocStructure,MeaningGraph
+import           SRL.Analyze.Type                    (AnalyzePredata,ConsoleOutput
+                                                     ,DocStructure,MeaningGraph
                                                      ,analyze_framedb,analyze_rolemap
-                                                     ,ds_mtokenss,ds_sentStructures,ss_tagged)
+                                                     ,ds_mtokenss,ds_sentStructures,ss_tagged
+                                                     ,outputDocStructure,outputMatchedFrames,outputX'tree
+                                                     )
 -- spapi layer
 import           CloudHaskell.QueryQueue             (QueryStatus(..),QQVar,emptyQQ,next
                                                      ,singleQuery)
@@ -74,6 +77,7 @@ import           SemanticParserAPI.Type              (InputSentence(..),PNGData(
                                                      ,DefRoot(..),CContent(..),EContent(..)
                                                      ,SVGData(..)
                                                      )
+import qualified SemanticParserAPI.Type            as S  (ConsoleOutput(ConsoleOutput))
 --
 import           API
 
@@ -126,7 +130,6 @@ createDotGraph mg = do
   bstr <- B.readFile "test.png"
   setCurrentDirectory cdir
   let pngdata = PNGData (uriEncode "image/png" bstr)
-  -- let pngdata = PNGData (TE.decodeUtf8 ("data:image/png;base64," <> B64.encode bstr))
   pure pngdata
 
 
@@ -182,13 +185,14 @@ postAnalysis ::
   -> InputSentence
   -> Handler APIResult
 postAnalysis framedb rolemap qqvar (InputSentence sent) = do
-  CR_Sentence (ResultSentence _ tokss mgs otxt) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
+  CR_Sentence (ResultSentence _ tokss mgs cout) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
   dots <- liftIO $ mapM createDotGraph mgs
   svgs <- liftIO $ mapM createOGDFSVG (zip [1..] mgs)
   let mts = concatMap (mkMeaningTree rolemap) mgs
       arbs = concatMap (mkARB rolemap) mgs
       fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
-  pure (APIResult tokss mts arbs dots svgs fns otxt)
+      cout' = S.ConsoleOutput (cout^.outputX'tree) (cout^.outputDocStructure) (cout^.outputMatchedFrames)
+  pure (APIResult tokss mts arbs dots svgs fns cout')
 
 
 data ServerConfig = ServerConfig {

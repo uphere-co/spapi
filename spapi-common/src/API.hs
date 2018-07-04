@@ -1,11 +1,8 @@
 {-# LANGUAGE DataKinds     #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
 module API where
 
-import           Data.Aeson         (FromJSON(..),ToJSON(..))
-import           GHC.Generics       (Generic)
 import           Servant.API
 
 import           SemanticParserAPI.Type (APIResult,InputSentence)

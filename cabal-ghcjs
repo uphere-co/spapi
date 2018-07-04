@@ -2,4 +2,4 @@
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-nix-shell -j1 --cores 20 $DIR/default.nix --arg revision "import ../uphere-ops/api-dev/rev-dev.nix" -A shells.ghcjs --add-root $DIR/dist-ghcjs/gc-roots/gc-root --indirect --run "cabal --project-file=$DIR/cabal-ghcjs.project --builddir=dist-ghcjs $(printf "%q " "$@")"
+nix-shell -j1 --cores 20 $DIR/default.nix --arg revision "import ../uphere-ops/api-dev/rev-dev.nix" -A shells.ghcjs --add-root $DIR/gc-root-ghcjs --indirect --run "cabal --project-file=$DIR/cabal-ghcjs.project --builddir=dist-ghcjs $(printf "%q " "$@")"

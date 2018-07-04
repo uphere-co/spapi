@@ -16,7 +16,7 @@
 
 module Example where
 
-import           Control.Lens ((^.))
+import           Control.Lens ((^.),view)
 import           Control.Monad (void, (<=<))
 import           Control.Monad.Trans.Class (lift)
 import           Data.Bool (bool)
@@ -59,7 +59,8 @@ import           SemanticParserAPI.Type (InputSentence(..)
                                         ,resultARBs
                                         ,resultPNGData
                                         ,resultSVGData
-                                        ,resultOutputText
+                                        ,resultConsoleOutput
+                                        ,outputX'tree
                                         ,png_data
                                         ,svg_data)
 --
@@ -270,36 +271,6 @@ mkExampleDropdown =
   dropdown def Nothing $ TaggedStatic $
     foldMap (\(t,_) -> t =: text t) exampleData
 
-arbView :: (MonadWidget t m) => ARB -> m ()
-arbView arb =
-  -- paragraph $ do
-    elClass "div" "box_analytics" $ do
-      elClass "div" "side_l" $ do
-        elClass "div" "in_box ty01" $ do
-          el "dl" $ do
-            el "dt" $ do
-              elClass "span" "tit" $ do
-                let blocks = formatARB arb
-                -- mapM_ (paragraph . text . T.pack . show) blocks
-                mapM_ arbBlock blocks
-                -- text (T.pack (show arb))
-                -- text "abc"
-                -- display arb -- (fmap show arbs)
-
-
-arbBlock :: (MonadWidget t m) => ARBBlock -> m ()
-arbBlock (ARBBlock p t as) =
-   elClass "span" "framenet" $
-     el "div" $ do
-       elClass "span" "prep" $
-         text p
-       el "span" $
-         text t
-       mapM_ arbAnnot as
-
-arbAnnot :: (MonadWidget t m) => ARBAnnot -> m ()
-arbAnnot (ARBAnnot t a) = elClass "div" t $ text a
-
 sectionSentence ::
        forall t m.
        (SupportsServantReflex t m, MonadWidget t m) =>
@@ -333,11 +304,12 @@ sectionSentence postanalysis = do
 
     srcpng <- holdDyn "" (fmap extractPNG response)
     srcsvg <- holdDyn "" (fmap extractSVG response)
-    arbs <- holdDyn [] (fmap (^.resultARBs) response)
-    otxt <- holdDyn "" (fmap (^.resultOutputText) response)
+    arbs <- holdDyn [] (fmap (view resultARBs) response)
+    cout <- holdDyn def $ fmap (view resultConsoleOutput) response
+    --  (fmap (^.resultOutputText) response)
     el "pre" $
       el "code" $
-        dynText otxt
+        dynText (fmap (view outputX'tree) cout)
 
     let conf = def & imageConfig_shape |?~ Rounded
                    & imageConfig_size |~ Just Massive

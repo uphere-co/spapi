@@ -20,12 +20,14 @@ import           Data.Text                      (Text)
 import qualified Data.Text                 as T
 import           GHC.Generics                   (Generic)
 --
--- import           GHCJS.Marshal                  (toJSVal)
--- import           GHCJS.Types                    (JSVal)
---
 import           NLP.Semantics.Type
 --
--- import           Util
+import           Reflex.Dom.SemanticUI
+import           Reflex.Dom.Core (text)
+import           Reflex.Dom.Routing.Writer
+import           Reflex.Dom.Routing.Nested
+import           Servant.Reflex
+
 
 
 data AnnotType = AnnotFrame | AnnotFrameElement | AnnotParen
@@ -172,25 +174,30 @@ formatARB x = let tbl = zip [1..] (S.evalState (mkTableARB Nothing (PrepOr Nothi
               in map mkARBBlock txts
 
 
+arbView :: (MonadWidget t m) => ARB -> m ()
+arbView arb =
+  elClass "div" "box_analytics" $ do
+    elClass "div" "side_l" $ do
+      elClass "div" "in_box ty01" $ do
+        el "dl" $ do
+          el "dt" $ do
+            elClass "span" "tit" $ do
+              let blocks = formatARB arb
+              mapM_ arbBlock blocks
 
-{- 
-domARBBlock :: ARBBlock -> IO JSVal
-domARBBlock (ARBBlock p t as) = do
-  v <- toJSVal (toJSON as)
-  n <- createElement "arb-block"
-  n ^. jss "prep" p
-  n ^. jss "text" t
-  n ^. jss "annots" v
-  return n
+
+arbBlock :: (MonadWidget t m) => ARBBlock -> m ()
+arbBlock (ARBBlock p t as) =
+  elClass "span" "framenet" $
+    el "div" $ do
+      elClass "span" "prep" $
+        text p
+      el "span" $
+        text t
+      mapM_ arbAnnot as
 
 
-domARBView :: JSVal -> [ARBBlock] -> IO ()
-domARBView this blks = do
-  ns <- mapM domARBBlock blks
+arbAnnot :: (MonadWidget t m) => ARBAnnot -> m ()
+arbAnnot (ARBAnnot t a) = elClass "div" t $ text a
 
-  -- for the time being
-  x <- this^.js "shadowRoot".jsf "querySelector" ("#content" :: Text)
-  js_clear_dom_children x
 
-  x `appendChildren` ns
--}
