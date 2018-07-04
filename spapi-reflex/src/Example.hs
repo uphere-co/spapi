@@ -209,6 +209,17 @@ mkExampleDropdown =
   dropdown def Nothing $ TaggedStatic $
     foldMap (\(t,_) -> t =: text t) exampleData
 
+
+consoleBox :: (MonadWidget t m) => Dynamic t Text -> m ()
+consoleBox dtxt =
+  segment (def & segmentConfig_inverted |~ True
+               & style |~ Style "overflow-x: scroll"
+          ) $ do
+    el "pre" $
+      el "code" $
+        dynText dtxt
+
+
 sectionSentence ::
        forall t m.
        (SupportsServantReflex t m, MonadWidget t m) =>
@@ -244,18 +255,11 @@ sectionSentence postanalysis = do
     srcsvg <- holdDyn "" (fmap extractSVG response)
     arbs <- holdDyn [] (fmap (view resultARBs) response)
     dmcout <- holdDyn Nothing $ fmap (Just . view resultConsoleOutput) response
-    let widget dcout =
-          segment (def & segmentConfig_inverted |~ True
-                         & style |~ Style "overflow-x: scroll"
-                    ) $ do
-              el "pre" $
-                el "code" $
-                  dynText (fmap (view outputX'tree) dcout)
 
     dyn . flip fmap dmcout $ \mcout ->
       case mcout of
         Nothing -> blank
-        Just cout -> widget (constDyn cout)
+        Just cout -> consoleBox (constDyn (cout^.outputX'tree))
 
     let conf = def & imageConfig_shape |?~ Rounded
                    & imageConfig_size |~ Just Massive
