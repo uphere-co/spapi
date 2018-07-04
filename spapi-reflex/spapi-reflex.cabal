@@ -17,6 +17,7 @@ library
 
   exposed-modules:
       ARBView
+    , Console            
     , Example
     , Sample
     , Util

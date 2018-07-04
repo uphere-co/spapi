@@ -64,7 +64,8 @@ import           SemanticParserAPI.Type (InputSentence(..)
                                         ,png_data
                                         ,svg_data)
 --
-import           ARBView
+import           ARBView (arbView)
+import           Console (consoleBox)
 import           Sample
 
 import           API
@@ -210,14 +211,6 @@ mkExampleDropdown =
     foldMap (\(t,_) -> t =: text t) exampleData
 
 
-consoleBox :: (MonadWidget t m) => Dynamic t Text -> m ()
-consoleBox dtxt =
-  segment (def & segmentConfig_inverted |~ True
-               & style |~ Style "overflow-x: scroll"
-          ) $ do
-    el "pre" $
-      el "code" $
-        dynText dtxt
 
 
 sectionSentence ::
