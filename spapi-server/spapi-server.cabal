@@ -41,7 +41,7 @@ executable spapi-server
                      , distributed-process-lifted
                      , stm
                      --
-                     , compute-engine
+                     , compute-worker
                      , HFrameNet
                      , lexicon
                      , lexicon-builder

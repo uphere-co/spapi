@@ -12,7 +12,7 @@ let
   corenlp = res_corenlp.corenlp;
   corenlp_models = res_corenlp.corenlp_models;
 
-  hsconfig = pkgs.lib.callPackageWith (pkgs//revision) (revision.uphere-nix-overlay + "/nix/haskell-modules/configuration-semantic-parser-api.nix")
+  hsconfig = pkgs.lib.callPackageWith (pkgs//revision) (revision.uphere-nix-overlay + "/nix/haskell-modules/configuration-spapi.nix")
                { inherit corenlp corenlp_models fasttext; };
 
 in
