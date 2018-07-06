@@ -220,6 +220,16 @@ sectionReuters = do
     text "Reuters section will be here."
 
 
+countApp :: (MonadWidget t m) => m ()
+countApp = do
+  e <- button def $ text "click me"
+  c <- foldDyn (+) 0 (1 <$ e)
+  display c
+
+
+dummyApp :: (MonadWidget t m) => m ()
+dummyApp = text "dummy"
+
 app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
 app =
   runRouteWithPathInFragment $ fmap snd $ runRouteWriterT $ mdo
@@ -264,12 +274,23 @@ app =
 
         divider $ def & dividerConfig_hidden |~ True
 
-      withRoute $ \route -> do
+      eb <- withRoute $ \route -> do
         case route of
-          Nothing         -> sectionSentence postanalysis
-          Just "sentence" -> sectionSentence postanalysis
-          Just "reuters"  -> sectionReuters
+          Just "sentence" -> pure False -- sectionSentence postanalysis
+          Just "reuters"  -> pure True -- sectionReuters
+          _               -> pure False -- sectionSentence postanalysis
 
+
+      -- db <- holdDyn False eb
+      -- display db
+      -- dyn (fmap (\case True -> sectionReuters; False -> sectionSentence postanalysis) db)
+      db <- paragraph $ buttons def $ do
+        b1 <- button def $ text "A"
+        b2 <- button def $ text "B"
+        holdDyn False $ leftmost [ True <$ b1, False <$ b2 ]
+
+      dyn (joinDyn (fmap (\case True -> pure countApp; False -> pure dummyApp) db))
+      -- countApp
     -- Footer
     segment (def & segmentConfig_vertical |~ True
                 & style |~ Style "padding: 0") blank
