@@ -227,6 +227,13 @@ countApp = do
   display c
 
 
+pages :: (MonadWidget t m) => Dynamic t Bool -> m () -> m () -> m ()
+pages db w1 w2 = do
+  let onoff = fmap (\b -> if b then Style "display: block" else Style "display: none")
+  segment (def & style .~ Dyn (onoff db)) w1
+  segment (def & style .~ Dyn (onoff (fmap not db))) w2
+
+
 dummyApp :: (MonadWidget t m) => m ()
 dummyApp = text "dummy"
 
@@ -289,7 +296,8 @@ app =
         b2 <- button def $ text "B"
         holdDyn False $ leftmost [ True <$ b1, False <$ b2 ]
 
-      dyn (joinDyn (fmap (\case True -> pure countApp; False -> pure dummyApp) db))
+      pages db countApp dummyApp
+      -- dyn (joinDyn (fmap (\case True -> pure countApp; False -> pure dummyApp) db))
       -- countApp
     -- Footer
     segment (def & segmentConfig_vertical |~ True
