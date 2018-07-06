@@ -4,6 +4,8 @@ module Sample where
 
 import Data.Text (Text)
 
+goodExampleData = take 10 exampleData
+
 
 exampleData :: [(Text,Text)]
 exampleData =

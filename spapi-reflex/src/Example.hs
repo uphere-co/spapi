@@ -84,19 +84,6 @@ api = Proxy
 restAPI :: Proxy RESTAPI
 restAPI = Proxy
 
-data Category t m = Category
-  { categoryName :: Text
-  , categoryItems :: [(Text, Status, Maybe (Section t m))]
-  }
-data Status = Implemented | PartiallyImplemented | NotImplemented deriving Show
-
-
-
--- | Convert a component name to a css id string
-toId :: Text -> Text
-toId = T.intercalate "-" . T.words . T.toLower
-
-
 
 runWithLoader :: MonadWidget t m => m ()
 runWithLoader = do
@@ -134,10 +121,13 @@ analyzeButton = button conf $ text "Analyze"
 
 
 
-mkExampleDropdown :: (MonadWidget t m) => m (Dropdown t (Maybe Text))
-mkExampleDropdown =
-  dropdown def Nothing $ TaggedStatic $
-    foldMap (\(t,_) -> t =: text t) exampleData
+mkExampleDropdown :: (MonadWidget t m) => Dynamic t Bool -> m (Dropdown t (Maybe Text))
+mkExampleDropdown goodex =
+  dropdown def Nothing $ TaggedDynamic $
+    let dexampleData = fmap (\case True -> goodExampleData; False -> exampleData) goodex
+    in fmap (foldMap (\(t,_) -> t =: text t)) dexampleData
+
+
 
 expandableSegments :: (MonadWidget t m) => [(Text,m ())] -> m ()
 expandableSegments nws =
@@ -165,9 +155,17 @@ sectionSentence ::
 sectionSentence postanalysis = do
   paragraph $ do
     text "Enter a sentence and then you will get a semantic analysis."
+
+  goodex <- paragraph $ buttons def $ do
+    goodex <- button def $ text "Good Example Only"
+    allex <- button def $ text "All Examples"
+    holdDyn False $ leftmost
+      [ True <$ goodex, False <$ allex ]
+
+
   drpdn <- paragraph $ do
     text "Example sentences: "
-    mkExampleDropdown
+    mkExampleDropdown goodex
   let drpdnevent :: Event t Text
       drpdnevent =
         let dyn0 = value drpdn
