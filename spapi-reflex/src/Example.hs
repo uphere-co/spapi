@@ -143,8 +143,7 @@ expandableSegments nws =
         actionConfig = def
           & action_event ?~ (mkTransition . bool Out In <$> updated open)
           & action_initialDirection .~ Out
-    segment (def & action ?~ actionConfig) $ do
-      widget
+    segment (def & action ?~ actionConfig) widget
 
 
 sectionSentence ::
@@ -188,7 +187,7 @@ sectionSentence postanalysis = do
 
     srcpng <- holdDyn "" (fmap extractPNG response)
     srcsvg <- holdDyn "" (fmap extractSVG response)
-    arbs <- holdDyn [] (fmap (view resultARBs) response)
+    arbs   <- holdDyn [] (fmap (view resultARBs) response)
     dmcout <- holdDyn Nothing $ fmap (Just . view resultConsoleOutput) response
 
     dyn . flip fmap dmcout $ \mcout ->
