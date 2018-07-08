@@ -41,6 +41,7 @@ executable spapi-server
                      , distributed-process-lifted
                      , stm
                      --
+                     , cloud-haskell-util
                      , compute-worker
                      , HFrameNet
                      , lexicon
