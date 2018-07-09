@@ -238,5 +238,6 @@ main = do
     run (webPort cfg) $
       etag etagcontext NoMaxAge  $
         serve api (serveDirectoryFileServer (staticDir cfg)  :<|>
-                   postAnalysis framedb rolemap qqvar
+                   postAnalysis framedb rolemap qqvar        :<|>
+                   pure "batch test"
                   )

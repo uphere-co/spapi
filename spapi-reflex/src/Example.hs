@@ -84,6 +84,9 @@ api = Proxy
 restAPI :: Proxy RESTAPI
 restAPI = Proxy
 
+batchAPI :: Proxy BATCHAPI
+batchAPI = Proxy
+
 
 runWithLoader :: MonadWidget t m => m ()
 runWithLoader = do
@@ -223,10 +226,17 @@ sectionReuters = do
 sectionBatch ::
       forall t m.
        (SupportsServantReflex t m, MonadWidget t m) =>
-       RouteWriterT t Text (RouteT t Text m) ()
-sectionBatch = do
+       Client t m BATCHAPI ()
+    -> RouteWriterT t Text (RouteT t Text m) ()
+sectionBatch batch = do
   paragraph $ do
     text "Batch section will be here."
+    ebtn <- button def $ text "click me"
+    response <- lift $ lift $ fmapMaybe reqSuccess <$> batch ebtn
+    dtext <- holdDyn "" response
+    display dtext
+
+
 
 pages :: (MonadWidget t m) => Dynamic t Int -> [m ()] -> m ()
 pages dmode ws = do
@@ -244,6 +254,12 @@ app =
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn (BasePath "/"))
+    let batch        = client
+                         batchAPI
+                         (Proxy :: Proxy m)
+                         (Proxy :: Proxy ())
+                         (constDyn (BasePath "/"))
+
 
     let mainConfig =  def
             & elConfigAttributes |~ ("id" =: "main")
@@ -294,7 +310,7 @@ app =
 
       dmode <- holdDyn 0 emode
 
-      pages dmode [sectionSentence postanalysis, sectionReuters, sectionBatch]
+      pages dmode [sectionSentence postanalysis, sectionReuters, sectionBatch batch]
 
     -- Footer
     segment (def & segmentConfig_vertical |~ True
