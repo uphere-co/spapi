@@ -220,11 +220,20 @@ sectionReuters = do
     text "Reuters section will be here."
 
 
-pages :: (MonadWidget t m) => Dynamic t Bool -> m () -> m () -> m ()
-pages db w1 w2 = do
-  let onoff = fmap (\b -> if b then Style "display: block" else Style "padding: 0; display: none")
-  ui "div" (def & style .~ Dyn (onoff db)) w1
-  ui "div" (def & style .~ Dyn (onoff (fmap not db))) w2
+sectionBatch ::
+      forall t m.
+       (SupportsServantReflex t m, MonadWidget t m) =>
+       RouteWriterT t Text (RouteT t Text m) ()
+sectionBatch = do
+  paragraph $ do
+    text "Batch section will be here."
+
+pages :: (MonadWidget t m) => Dynamic t Int -> [m ()] -> m ()
+pages dmode ws = do
+  let onoff n = fmap (\m -> if m == n then Style "display: block" else Style "padding: 0; display: none")
+  for_ (zip [0..] ws) $ \(i,w) ->
+    ui "div" (def & style .~ Dyn (onoff i dmode)) w
+
 
 
 app :: forall t m. (SupportsServantReflex t m, MonadWidget t m) => m ()
@@ -268,19 +277,24 @@ app =
           (e2, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
             text "Reuters Archive"
           tellRoute $ ["reuters"] <$ domEvent Click e2
+          (e3, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
+            text "Batch Status"
+          tellRoute $ ["batch"] <$ domEvent Click e3
+
 
         divider $ def & dividerConfig_hidden |~ True
 
-      eb <- withRoute $ \route -> do
+      emode <- withRoute $ \route -> do
         case route of
-          Just "sentence" -> pure True -- sectionSentence postanalysis
-          Just "reuters"  -> pure False -- sectionReuters
-          _               -> pure True -- sectionSentence postanalysis
+          Just "sentence" -> pure 0
+          Just "reuters"  -> pure 1
+          Just "batch"    -> pure 2
+          _               -> pure 0
 
 
-      db <- holdDyn True eb
+      dmode <- holdDyn 0 emode
 
-      pages db (sectionSentence postanalysis) sectionReuters
+      pages dmode [sectionSentence postanalysis, sectionReuters, sectionBatch]
 
     -- Footer
     segment (def & segmentConfig_vertical |~ True
