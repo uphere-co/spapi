@@ -7,7 +7,8 @@ module Main where
 import           Control.Concurrent                  (forkIO,threadDelay)
 import           Control.Concurrent.STM              (atomically,retry,newTVarIO
                                                      ,modifyTVar',readTVar,writeTVar)
-import           Control.Distributed.Process.Lifted  (SendPort,spawnLocal)
+import           Control.Distributed.Process.Lifted  (SendPort,ReceivePort,send,getSelfPid
+                                                     ,spawnLocal)
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (forever,void)
 import           Control.Monad.IO.Class              (liftIO)
@@ -21,6 +22,7 @@ import           Data.Maybe                          (fromMaybe)
 import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
 import           Data.Text                           (Text)
+import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as TE
 import qualified Data.Text.IO                  as TIO
 import qualified Data.Text.Lazy                as TL
@@ -65,14 +67,14 @@ import           SRL.Analyze.Type                    (AnalyzePredata,ConsoleOutp
 -- spapi layer
 import           CloudHaskell.QueryQueue             (QueryStatus(..),QQVar,emptyQQ,next
                                                      ,singleQuery)
-import           CloudHaskell.Util                   (LogProcess
-                                                     ,onesecond,tellLog,queryProcess
-                                                     ,client,mainP,initP)
+import           CloudHaskell.Type                   (Pipeline,Q(..),R(..))
+import           CloudHaskell.Util                   (onesecond,tellLog,queryProcess
+                                                     ,client,mainP,heartBeatHandshake)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
                                                      ,ResultSentence(..)
                                                      ,ComputeConfig(..), NetworkConfig(..)
                                                      )
-import           SemanticParserAPI.CLI.Client        (consoleClient)
+import           SemanticParserAPI.CLI.Client        (webClient)
 import           SemanticParserAPI.Type              (InputSentence(..),PNGData(..),APIResult(..)
                                                      ,DefRoot(..),CContent(..),EContent(..)
                                                      ,SVGData(..)
@@ -83,27 +85,6 @@ import           API
 
 api :: Proxy API
 api = Proxy
-
-
-webClient :: QQVar ComputeQuery ComputeResult
-          -> SendPort (ComputeQuery, SendPort ComputeResult)
-          -> LogProcess ()
-webClient qqvar sc = do
-  forever $ do
-    (i,q) <- liftIO $ atomically $ do
-               qq <- readTVar qqvar
-               case next qq of
-                 Nothing -> retry
-                 Just (i,q) -> do
-                   let qq' = IM.update (\_ -> Just (BeingProcessed q)) i qq
-                   writeTVar qqvar qq'
-                   return (i,q)
-    tellLog ("query start: " ++ show (i,q))
-    spawnLocal $ do
-      r <- queryProcess sc q return
-      liftIO $ atomically $ modifyTVar' qqvar (IM.update (\_ -> Just (Answered q r)) i)
-      test <- liftIO $ atomically $ readTVar qqvar
-      tellLog (show test)
 
 
 withTempFile :: (String,String) -> Int -> (FilePath -> IO a) -> IO a
@@ -195,6 +176,10 @@ postAnalysis framedb rolemap qqvar (InputSentence sent) = do
   pure (APIResult tokss mts arbs dots svgs fns cout')
 
 
+batchTest :: QQVar Q R -> Handler Text
+batchTest qqvar = T.pack . show <$> liftIO (singleQuery qqvar Q)
+
+
 data ServerConfig = ServerConfig {
                       computeConfig :: FilePath
                     , langConfig :: FilePath
@@ -218,7 +203,8 @@ main :: IO ()
 main = do
   cfg <- execParser serverConfig
 
-  qqvar <- newTVarIO emptyQQ
+  qqvar1 <- newTVarIO emptyQQ
+  qqvar2 <- newTVarIO emptyQQ
 
   ecompcfg :: Either String ComputeConfig <- eitherDecodeStrict <$> B.readFile (computeConfig cfg)
   elangcfg :: Either String LexDataConfig <- eitherDecodeStrict <$> B.readFile (langConfig cfg)
@@ -233,11 +219,17 @@ main = do
         rolemapfile = langcfg ^. cfg_rolemap_file
     framedb <- loadFrameData framedir
     rolemap <- loadRoleInsts rolemapfile
-    forkIO $ client (cport,chostg,chostl,shostg,sport) (initP (mainP (webClient qqvar)))
+    forkIO $
+      client
+        (cport,chostg,chostl,shostg,sport)
+        (\them_ping -> do
+              heartBeatHandshake them_ping (mainP (webClient qqvar1))
+              pure ()
+        )
     etagcontext <- defaultETagContext False
     run (webPort cfg) $
       etag etagcontext NoMaxAge  $
         serve api (serveDirectoryFileServer (staticDir cfg)  :<|>
-                   postAnalysis framedb rolemap qqvar        :<|>
-                   pure "batch test"
+                   postAnalysis framedb rolemap qqvar1       :<|>
+                   batchTest qqvar2
                   )
