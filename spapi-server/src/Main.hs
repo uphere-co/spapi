@@ -65,11 +65,12 @@ import           SRL.Analyze.Type                    (AnalyzePredata,ConsoleOutp
                                                      ,outputDocStructure,outputMatchedFrames,outputX'tree
                                                      )
 -- spapi layer
+import           CloudHaskell.Client                 (queryProcess,client,mainP
+                                                     ,heartBeatHandshake)
 import           CloudHaskell.QueryQueue             (QueryStatus(..),QQVar,emptyQQ,next
                                                      ,singleQuery)
 import           CloudHaskell.Type                   (Pipeline,Q(..),R(..))
-import           CloudHaskell.Util                   (onesecond,tellLog,queryProcess
-                                                     ,client,mainP,heartBeatHandshake)
+import           CloudHaskell.Util                   (onesecond,tellLog)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
                                                      ,ResultSentence(..)
                                                      ,ComputeConfig(..), NetworkConfig(..)
