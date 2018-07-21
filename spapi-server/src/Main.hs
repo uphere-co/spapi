@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
@@ -12,10 +13,14 @@ import           Control.Distributed.Process.Lifted  (SendPort,ReceivePort,send,
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (forever,void)
 import           Control.Monad.IO.Class              (liftIO)
-import           Data.Aeson                          (eitherDecodeStrict)
+import           Data.Aeson                          (eitherDecodeStrict
+                                                     ,FromJSON(..),ToJSON(..)
+                                                     ,genericParseJSON,genericToJSON
+                                                     ,defaultOptions,fieldLabelModifier)
 import qualified Data.ByteString.Base64        as B64
 import qualified Data.ByteString.Char8         as B
-import           Data.Foldable                       (forM_)
+import           Data.Char                           (toLower)
+import           Data.Foldable                       (for_)
 import qualified Data.HashMap.Strict           as HM
 import qualified Data.IntMap                   as IM
 import           Data.Maybe                          (fromMaybe)
@@ -26,6 +31,7 @@ import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as TE
 import qualified Data.Text.IO                  as TIO
 import qualified Data.Text.Lazy                as TL
+import           GHC.Generics                        (Generic)
 import           Network.Wai.Handler.Warp            (run)
 import           Network.Wai.Middleware.ETag
 import           Options.Applicative                 (Parser,ParserInfo
@@ -185,11 +191,35 @@ batchTest :: QQVar Q R -> Handler Text
 batchTest qqvar = T.pack . show <$> liftIO (singleQuery qqvar Q)
 
 
+data SPAPIConfig = SPAPIConfig {
+                     spapiStaticDir :: FilePath
+                   , spapiPort      :: Int
+                   }
+                 deriving (Show,Eq,Ord,Generic)
+
+instance FromJSON SPAPIConfig where
+  parseJSON = genericParseJSON
+                defaultOptions {
+                  fieldLabelModifier = \name ->
+                    case drop 5 name of
+                      x : xs -> toLower x : xs
+                      xs -> xs
+                }
+
+
+instance ToJSON SPAPIConfig where
+  toJSON = genericToJSON
+             defaultOptions {
+               fieldLabelModifier = \name ->
+                 case drop 5 name of
+                   x : xs -> toLower x : xs
+                   xs -> xs
+             }
+
 data ServerConfig = ServerConfig {
                       computeConfig :: FilePath
-                    , langConfig :: FilePath
-                    , staticDir :: FilePath
-                    , webPort :: Int
+                    , langConfig    :: FilePath
+                    , spapiConfig   :: FilePath
                     }
                   deriving (Show)
 
@@ -197,8 +227,8 @@ data ServerConfig = ServerConfig {
 pOptions :: Parser ServerConfig
 pOptions = ServerConfig <$> strOption (long "compute" <> short 'c' <> help "Compute engine server/client configuration")
                         <*> strOption (long "lang"    <> short 'l' <> help "Language engine server/client configuration")
-                        <*> strOption (long "static"  <> short 's' <> help "Directory of static html files")
-                        <*> option auto (long "port" <> short 'p' <> help "web port")
+                        <*> strOption (long "spapi"   <> short 's' <> help "SPAPI web server configuration")
+
 
 serverConfig :: ParserInfo ServerConfig
 serverConfig = info pOptions (fullDesc <> progDesc "spapi-server")
@@ -213,8 +243,9 @@ main = do
 
   ecompcfg :: Either String ComputeConfig <- eitherDecodeStrict <$> B.readFile (computeConfig cfg)
   elangcfg :: Either String LexDataConfig <- eitherDecodeStrict <$> B.readFile (langConfig cfg)
+  espapicfg :: Either String SPAPIConfig <- eitherDecodeStrict <$> B.readFile (spapiConfig cfg)
 
-  forM_ ((,) <$> ecompcfg <*> elangcfg) $ \(compcfg,langcfg) -> do
+  for_ ((,,) <$> ecompcfg <*> elangcfg <*> espapicfg) $ \(compcfg,langcfg,spapicfg) -> do
     let cport  = port  (computeClient compcfg)
         chostg = hostg (computeClient compcfg)
         chostl = hostl (computeClient compcfg)
@@ -240,9 +271,9 @@ main = do
                 pure ()
         )
     etagcontext <- defaultETagContext False
-    run (webPort cfg) $
+    run (spapiPort spapicfg) $
       etag etagcontext NoMaxAge  $
-        serve api (serveDirectoryFileServer (staticDir cfg)  :<|>
+        serve api (serveDirectoryFileServer (spapiStaticDir spapicfg)  :<|>
                    postAnalysis framedb rolemap qqvar1       :<|>
                    batchTest qqvar2
                   )
