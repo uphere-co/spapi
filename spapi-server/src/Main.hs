@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
-
+{-# LANGUAGE TypeApplications    #-}
 module Main where
 
 import           Control.Concurrent                  (forkIO,threadDelay)
 import           Control.Concurrent.STM              (atomically,retry,newTVarIO
                                                      ,modifyTVar',readTVar,writeTVar)
 import           Control.Distributed.Process.Lifted  (SendPort,ReceivePort,send,getSelfPid
-                                                     ,spawnLocal)
+                                                     ,spawnLocal,expect)
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (forever,void)
 import           Control.Monad.IO.Class              (liftIO)
@@ -65,12 +65,16 @@ import           SRL.Analyze.Type                    (AnalyzePredata,ConsoleOutp
                                                      ,outputDocStructure,outputMatchedFrames,outputX'tree
                                                      )
 -- spapi layer
-import           CloudHaskell.Client                 (queryProcess,client,mainP
+import           CloudHaskell.Client                 (queryProcess
+                                                     ,client
+                                                     ,clientUnit
+                                                     ,routerHandshake
+                                                     ,serviceHandshake
                                                      ,heartBeatHandshake)
 import           CloudHaskell.QueryQueue             (QueryStatus(..),QQVar,emptyQQ,next
                                                      ,singleQuery)
 import           CloudHaskell.Type                   (Pipeline,Q(..),R(..))
-import           CloudHaskell.Util                   (onesecond,tellLog)
+import           CloudHaskell.Util                   (onesecond,lookupRouter,tellLog)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
                                                      ,ResultSentence(..)
                                                      ,ComputeConfig(..), NetworkConfig(..)
@@ -223,9 +227,17 @@ main = do
     forkIO $
       client
         (cport,chostg,chostl,shostg,sport)
-        (\them_ping -> do
-              heartBeatHandshake them_ping (mainP (webClient qqvar1))
-              pure ()
+        (\them_ping ->
+            heartBeatHandshake them_ping $
+              routerHandshake $ \router -> do
+                spid0 <- lookupRouter 0 router
+                tellLog $ "spid0 = " ++ show spid0
+                spid1 <- lookupRouter 1 router
+                tellLog $ "spid0 = " ++ show spid1
+                spawnLocal $ serviceHandshake spid0 (clientUnit @ComputeQuery @ComputeResult qqvar1)
+                spawnLocal $ serviceHandshake spid1 (clientUnit @Q @R qqvar2)
+                () <- expect -- indefinite wait. TODO: make this more idiomatic
+                pure ()
         )
     etagcontext <- defaultETagContext False
     run (webPort cfg) $
