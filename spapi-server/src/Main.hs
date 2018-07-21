@@ -3,15 +3,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-do-bind #-}
 module Main where
 
-import           Control.Concurrent                  (forkIO,threadDelay)
-import           Control.Concurrent.STM              (atomically,retry,newTVarIO
-                                                     ,modifyTVar',readTVar,writeTVar)
-import           Control.Distributed.Process.Lifted  (SendPort,ReceivePort,send,getSelfPid
-                                                     ,spawnLocal,expect)
+import           Control.Concurrent                  (forkIO)
+import           Control.Concurrent.STM              (newTVarIO)
+import           Control.Distributed.Process.Lifted  (spawnLocal,expect)
 import           Control.Lens                        ((^.),(^..))
-import           Control.Monad                       (forever,void)
+import           Control.Monad                       (void)
 import           Control.Monad.IO.Class              (liftIO)
 import           Data.Aeson                          (eitherDecodeStrict
                                                      ,FromJSON(..),ToJSON(..)
@@ -22,7 +21,6 @@ import qualified Data.ByteString.Char8         as B
 import           Data.Char                           (toLower)
 import           Data.Foldable                       (for_)
 import qualified Data.HashMap.Strict           as HM
-import qualified Data.IntMap                   as IM
 import           Data.Maybe                          (fromMaybe)
 import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
@@ -35,7 +33,7 @@ import           GHC.Generics                        (Generic)
 import           Network.Wai.Handler.Warp            (run)
 import           Network.Wai.Middleware.ETag
 import           Options.Applicative                 (Parser,ParserInfo
-                                                     ,auto,info,fullDesc,progDesc,option
+                                                     ,info,fullDesc,progDesc
                                                      ,help,short,long,execParser,strOption
                                                      )
 import           Servant.API                         ((:<|>)((:<|>)))
@@ -46,7 +44,6 @@ import           System.Directory                    (getCurrentDirectory
                                                      ,getTemporaryDirectory
                                                      ,removeFile)
 import           System.FilePath                     ((</>),(<.>))
-import           System.Environment                  (getArgs)
 import           System.Process                      (readProcess)
 -- nlp layer
 import           FrameNet.Query.Frame                (FrameDB,frameDB,loadFrameData)
@@ -64,28 +61,22 @@ import           SRL.Analyze.ARB                     (mkARB)
 import           SRL.Analyze.Format                  (dotMeaningGraph)
 import           SRL.Analyze.Format.OGDF             (mkOGDFSVG)
 import           SRL.Analyze.MeaningTree             (mkMeaningTree)
-import           SRL.Analyze.Type                    (AnalyzePredata,ConsoleOutput
-                                                     ,DocStructure,MeaningGraph
-                                                     ,analyze_framedb,analyze_rolemap
-                                                     ,ds_mtokenss,ds_sentStructures,ss_tagged
+import           SRL.Analyze.Type                    (MeaningGraph
                                                      ,outputDocStructure,outputMatchedFrames,outputX'tree
                                                      )
 -- spapi layer
-import           CloudHaskell.Client                 (queryProcess
-                                                     ,client
+import           CloudHaskell.Client                 (client
                                                      ,clientUnit
                                                      ,routerHandshake
                                                      ,serviceHandshake
                                                      ,heartBeatHandshake)
-import           CloudHaskell.QueryQueue             (QueryStatus(..),QQVar,emptyQQ,next
-                                                     ,singleQuery)
-import           CloudHaskell.Type                   (Pipeline,Q(..),R(..))
-import           CloudHaskell.Util                   (onesecond,lookupRouter,tellLog)
+import           CloudHaskell.QueryQueue             (QQVar,emptyQQ,singleQuery)
+import           CloudHaskell.Type                   (Q(..),R(..))
+import           CloudHaskell.Util                   (lookupRouter,tellLog)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
                                                      ,ResultSentence(..)
                                                      ,ComputeConfig(..), NetworkConfig(..)
                                                      )
-import           SemanticParserAPI.CLI.Client        (webClient)
 import           SemanticParserAPI.Type              (InputSentence(..),PNGData(..),APIResult(..)
                                                      ,DefRoot(..),CContent(..),EContent(..)
                                                      ,SVGData(..)
@@ -107,7 +98,9 @@ withTempFile (base,ext) i action = do
   pure r
 
 
-uriEncode mimetype bstr = TE.decodeUtf8 ("data:" <> mimetype <> ";base64," <> B64.encode bstr)
+uriEncode :: B.ByteString -> B.ByteString -> Text
+uriEncode mimetype bstr =
+  TE.decodeUtf8 ("data:" <> mimetype <> ";base64," <> B64.encode bstr)
 
 createDotGraph :: MeaningGraph -> IO PNGData
 createDotGraph mg = do
