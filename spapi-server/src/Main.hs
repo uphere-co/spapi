@@ -239,9 +239,9 @@ main = do
   espapicfg :: Either String SPAPIConfig <- eitherDecodeStrict <$> B.readFile (spapiConfig cfg)
 
   for_ ((,,) <$> ecompcfg <*> elangcfg <*> espapicfg) $ \(compcfg,langcfg,spapicfg) -> do
-    let cport  = port  (computeClient compcfg)
-        chostg = hostg (computeClient compcfg)
-        chostl = hostl (computeClient compcfg)
+    let cport  = port  (computeWeb compcfg)
+        chostg = hostg (computeWeb compcfg)
+        chostl = hostl (computeWeb compcfg)
         shostg = hostg (computeServer compcfg)
         sport  = port  (computeServer compcfg)
         framedir = langcfg ^. cfg_framenet_framedir
