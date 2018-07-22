@@ -71,7 +71,7 @@ import           CloudHaskell.Client                 (client
                                                      ,serviceHandshake
                                                      ,heartBeatHandshake)
 import           CloudHaskell.QueryQueue             (QQVar,emptyQQ,singleQuery)
-import           CloudHaskell.Type                   (Q(..),R(..))
+import           CloudHaskell.Type                   (Q(..),R(..),TCPPort(..),Gateway(..))
 import           CloudHaskell.Util                   (lookupRouter,tellLog)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
                                                      ,ResultSentence(..)
@@ -243,7 +243,7 @@ main = do
         chostg = hostg (computeWeb compcfg)
         chostl = hostl (computeWeb compcfg)
         shostg = hostg (computeServer compcfg)
-        sport  = port  (computeServer compcfg)
+        sport  = TCPPort (port  (computeServer compcfg))
         framedir = langcfg ^. cfg_framenet_framedir
         rolemapfile = langcfg ^. cfg_rolemap_file
     framedb <- loadFrameData framedir
@@ -251,7 +251,8 @@ main = do
     forkIO $
       client
         (cport,chostg,chostl,shostg,sport)
-        (\them_ping ->
+        (\gw -> do
+            let them_ping = gatewayWeb gw
             heartBeatHandshake them_ping $
               routerHandshake $ \router -> do
                 spid0 <- lookupRouter "query" router
