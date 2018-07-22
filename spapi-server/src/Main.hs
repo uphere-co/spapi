@@ -218,8 +218,8 @@ data ServerConfig = ServerConfig {
 
 
 pOptions :: Parser ServerConfig
-pOptions = ServerConfig <$> strOption (long "compute" <> short 'c' <> help "Compute engine server/client configuration")
-                        <*> strOption (long "lang"    <> short 'l' <> help "Language engine server/client configuration")
+pOptions = ServerConfig <$> strOption (long "compute" <> short 'c' <> help "Compute pipeline configuration")
+                        <*> strOption (long "lang"    <> short 'l' <> help "Language engine configuration")
                         <*> strOption (long "spapi"   <> short 's' <> help "SPAPI web server configuration")
 
 
@@ -254,9 +254,9 @@ main = do
         (\them_ping ->
             heartBeatHandshake them_ping $
               routerHandshake $ \router -> do
-                spid0 <- lookupRouter 0 router
+                spid0 <- lookupRouter "query" router
                 tellLog $ "spid0 = " ++ show spid0
-                spid1 <- lookupRouter 1 router
+                spid1 <- lookupRouter "test" router
                 tellLog $ "spid0 = " ++ show spid1
                 spawnLocal $ serviceHandshake spid0 (clientUnit @ComputeQuery @ComputeResult qqvar1)
                 spawnLocal $ serviceHandshake spid1 (clientUnit @Q @R qqvar2)
