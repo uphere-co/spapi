@@ -84,8 +84,8 @@ api = Proxy
 restAPI :: Proxy RESTAPI
 restAPI = Proxy
 
-batchAPI :: Proxy BATCHAPI
-batchAPI = Proxy
+statusAPI :: Proxy STATUSAPI
+statusAPI = Proxy
 
 
 runWithLoader :: MonadWidget t m => m ()
@@ -223,16 +223,16 @@ sectionReuters = do
     text "Reuters section will be here."
 
 
-sectionBatch ::
+sectionStatus ::
       forall t m.
        (SupportsServantReflex t m, MonadWidget t m) =>
-       Client t m BATCHAPI ()
+       Client t m STATUSAPI ()
     -> RouteWriterT t Text (RouteT t Text m) ()
-sectionBatch batch = do
+sectionStatus statusCheck = do
+  ebtn <- paragraph $ do
+    button def $ text "Status Check"
   paragraph $ do
-    text "Batch section will be here."
-    ebtn <- button def $ text "click me"
-    response <- lift $ lift $ fmapMaybe reqSuccess <$> batch ebtn
+    response <- lift $ lift $ fmapMaybe reqSuccess <$> statusCheck ebtn
     dtext <- holdDyn "" response
     display dtext
 
@@ -254,8 +254,8 @@ app =
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn (BasePath "/"))
-    let batch        = client
-                         batchAPI
+    let statusCheck  = client
+                         statusAPI
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn (BasePath "/"))
@@ -294,8 +294,8 @@ app =
             text "Reuters Archive"
           tellRoute $ ["reuters"] <$ domEvent Click e2
           (e3, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
-            text "Batch Status"
-          tellRoute $ ["batch"] <$ domEvent Click e3
+            text "Worker Status"
+          tellRoute $ ["status"] <$ domEvent Click e3
 
 
         divider $ def & dividerConfig_hidden |~ True
@@ -304,13 +304,15 @@ app =
         case route of
           Just "sentence" -> pure 0
           Just "reuters"  -> pure 1
-          Just "batch"    -> pure 2
+          Just "status"    -> pure 2
           _               -> pure 0
 
 
       dmode <- holdDyn 0 emode
 
-      pages dmode [sectionSentence postanalysis, sectionReuters, sectionBatch batch]
+      pages dmode [ sectionSentence postanalysis
+                  , sectionReuters
+                  , sectionStatus statusCheck]
 
     -- Footer
     segment (def & segmentConfig_vertical |~ True
