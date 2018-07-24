@@ -22,7 +22,7 @@ in
   packages = {
     spapi-common = ./spapi-common;
     spapi-server = ./spapi-server;
-    semantic-reflex = ./semantic-reflex;
+    semantic-reflex = ./semantic-reflex/semantic-reflex;
     servant-reflex = ./servant-reflex;
     spapi-reflex = ./spapi-reflex;
   };

@@ -40,10 +40,11 @@ import           CloudHaskell.Client                 (client
                                                      ,serviceHandshake
                                                      ,heartBeatHandshake)
 import           CloudHaskell.QueryQueue             (emptyQQ)
-import           CloudHaskell.Type                   (Q(..),R(..),TCPPort(..),Gateway(..))
+import           CloudHaskell.Type                   (TCPPort(..),Gateway(..))
 import           CloudHaskell.Util                   (lookupRouter,tellLog)
 import           SemanticParserAPI.Compute.Task      (rtable)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
+                                                     ,StatusQuery(..),StatusResult(..)
                                                      ,ComputeConfig(..), NetworkConfig(..))
 -- spapi layer
 import           Worker (batchTest,postAnalysis,api)
@@ -126,7 +127,7 @@ main = do
                 spid1 <- lookupRouter "test" router
                 tellLog $ "spid0 = " ++ show spid1
                 spawnLocal $ serviceHandshake spid0 (clientUnit @ComputeQuery @ComputeResult qqvar1)
-                spawnLocal $ serviceHandshake spid1 (clientUnit @Q @R qqvar2)
+                spawnLocal $ serviceHandshake spid1 (clientUnit @StatusQuery @StatusResult qqvar2)
                 () <- expect -- indefinite wait. TODO: make this more idiomatic
                 pure ()
         )

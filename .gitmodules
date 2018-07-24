@@ -4,3 +4,6 @@
 [submodule "servant-reflex"]
 	path = servant-reflex
 	url = git@github.com:imalsogreg/servant-reflex.git
+[submodule "semantic-reflex"]
+	path = semantic-reflex
+	url = https://github.com/tomsmalley/semantic-reflex

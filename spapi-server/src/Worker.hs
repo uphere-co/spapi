@@ -41,8 +41,8 @@ import           SRL.Analyze.Type                    (MeaningGraph
                                                      ,outputX'tree)
 -- compute-pipeline layer
 import           CloudHaskell.QueryQueue             (QQVar,singleQuery)
-import           CloudHaskell.Type                   (Q(..),R(..))
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
+                                                     ,StatusQuery(..),StatusResult(..)
                                                      ,ResultSentence(..))
 import           SemanticParserAPI.Type              (InputSentence(..),PNGData(..),APIResult(..)
                                                      ,DefRoot(..),CContent(..),EContent(..)
@@ -147,5 +147,5 @@ postAnalysis framedb rolemap qqvar (InputSentence sent) = do
   pure (APIResult tokss mts arbs dots svgs fns cout')
 
 
-batchTest :: QQVar Q R -> Handler Text
-batchTest qqvar = T.pack . show <$> liftIO (singleQuery qqvar Q)
+batchTest :: QQVar StatusQuery StatusResult -> Handler Text
+batchTest qqvar = T.pack . show <$> liftIO (singleQuery qqvar SQ)

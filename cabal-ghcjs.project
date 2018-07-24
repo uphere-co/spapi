@@ -1,6 +1,6 @@
 compiler: ghcjs
 packages:
-  semantic-reflex/
+  semantic-reflex/semantic-reflex
   servant-reflex/
   spapi-common/
   spapi-reflex/
