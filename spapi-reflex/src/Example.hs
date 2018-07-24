@@ -21,7 +21,8 @@ import           Control.Monad (void, (<=<))
 import           Control.Monad.Trans.Class (lift)
 import           Data.Bool (bool)
 import           Data.Foldable (for_)
-import           Data.List (lookup)
+import           Data.Function (on)
+import           Data.List (lookup,sortBy)
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe,mapMaybe,maybeToList)
 import           Data.Monoid ((<>))
@@ -56,6 +57,7 @@ import           Example.Section.Transition (transitions)
 --
 import           NLP.Semantics.Type (ARB(..))
 import           SemanticParserAPI.Type (InputSentence(..)
+                                        ,StatusResult(..)
                                         ,resultARBs
                                         ,resultPNGData
                                         ,resultSVGData
@@ -64,8 +66,8 @@ import           SemanticParserAPI.Type (InputSentence(..)
                                         ,outputMatchedFrames
                                         ,outputX'tree
                                         ,png_data
-                                        ,svg_data)
---
+                                        ,svg_data
+                                        ,statusNodes)
 import           ARBView (arbView)
 import           Console (consoleBox)
 import           Sample
@@ -223,19 +225,30 @@ sectionReuters = do
     text "Reuters section will be here."
 
 
+renderNode ::
+     forall t m. (MonadWidget t m) =>
+     (Text,Maybe Int)
+  -> m ()
+renderNode (name,mnum) =
+  label (def & labelConfig_image |~ True) $ do
+    case mnum of
+      Nothing -> image def $ Left $ Img "images/animals/sheep.png" def
+      Just _  -> image def $ Left $ Img "images/animals/duck.png" def
+    text name
+
+
 sectionStatus ::
       forall t m.
-       (SupportsServantReflex t m, MonadWidget t m) =>
+       (SupportsServantReflex t m, MonadWidget t m, Monad m) =>
        Client t m STATUSAPI ()
     -> RouteWriterT t Text (RouteT t Text m) ()
 sectionStatus statusCheck = do
   ebtn <- paragraph $ do
     button def $ text "Status Check"
   paragraph $ do
-    response <- lift $ lift $ fmapMaybe reqSuccess <$> statusCheck ebtn
-    dtext <- holdDyn "" response
-    display dtext
-
+    status :: Event t StatusResult <- lift $ lift $ fmapMaybe reqSuccess <$> statusCheck ebtn
+    void $ widgetHold blank $
+      fmap (mapM_ renderNode . sortBy (compare `on` fst) . view statusNodes) status
 
 
 pages :: (MonadWidget t m) => Dynamic t Int -> [m ()] -> m ()

@@ -13,7 +13,7 @@ import           Data.Maybe                          (fromMaybe)
 import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
 import           Data.Text                           (Text)
-import qualified Data.Text                     as T
+-- import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as TE
 import qualified Data.Text.IO                  as TIO
 import qualified Data.Text.Lazy                as TL
@@ -48,7 +48,9 @@ import           SemanticParserAPI.Type              (InputSentence(..),PNGData(
                                                      ,DefRoot(..),CContent(..),EContent(..)
                                                      ,SVGData(..)
                                                      )
-import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput))
+
+import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput)
+                                                     ,StatusResult(..))
 -- spapi layer
 import           API
 
@@ -147,5 +149,7 @@ postAnalysis framedb rolemap qqvar (InputSentence sent) = do
   pure (APIResult tokss mts arbs dots svgs fns cout')
 
 
-batchTest :: QQVar StatusQuery StatusResult -> Handler Text
-batchTest qqvar = T.pack . show <$> liftIO (singleQuery qqvar SQ)
+getStatus :: QQVar StatusQuery StatusResult -> Handler S.StatusResult
+getStatus qqvar = do
+    SR lst <- liftIO (singleQuery qqvar SQ)
+    pure (S.StatusResult lst)

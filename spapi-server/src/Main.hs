@@ -47,7 +47,7 @@ import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeRe
                                                      ,StatusQuery(..),StatusResult(..)
                                                      ,ComputeConfig(..), NetworkConfig(..))
 -- spapi layer
-import           Worker (batchTest,postAnalysis,api)
+import           Worker (getStatus,postAnalysis,api)
 
 
 data SPAPIConfig = SPAPIConfig {
@@ -136,5 +136,5 @@ main = do
       etag etagcontext NoMaxAge  $
         serve api (serveDirectoryFileServer (spapiStaticDir spapicfg)  :<|>
                    postAnalysis framedb rolemap qqvar1       :<|>
-                   batchTest qqvar2
+                   getStatus qqvar2
                   )
