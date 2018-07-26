@@ -29,6 +29,7 @@ import           Data.Monoid ((<>))
 import           Data.Proxy (Proxy(..))
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Text.Encoding (decodeUtf8)
 import           Reflex.Dom.SemanticUI
 import           Reflex.Dom.Core (text)
 import           Reflex.Dom.Routing.Writer
@@ -250,7 +251,12 @@ sectionStatus statusCheck = do
     status :: Event t StatusResult <- lift $ lift $ fmapMaybe reqSuccess <$> statusCheck ebtn
     void $ widgetHold blank $
       fmap (mapM_ renderNode . sortBy (compare `on` fst) . view statusNodes) status
-
+  paragraph $ do
+    ws <- textWebSocket "ws://mark:9191/stream" (def :: WebSocketConfig t Text)
+    receivedMessages <- foldDyn (\m ms -> ms ++ [m]) [] $ _webSocket_recv ws
+    display receivedMessages
+    -- el "ul" $ simpleList receivedMessages $ \m -> el "li" $ dynText $ fmap decodeUtf8 m
+    pure ()
 
 pages :: (MonadWidget t m) => Dynamic t Int -> [m ()] -> m ()
 pages dmode ws = do

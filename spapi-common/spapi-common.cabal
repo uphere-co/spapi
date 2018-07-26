@@ -25,6 +25,7 @@ library
                      , data-default
                      , lens
                      , servant
+                     -- , servant-websockets
                      , text
                      , transformers
                      --

@@ -1,14 +1,17 @@
+{-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Main where
 
-import           Control.Concurrent                  (forkIO)
+import           Control.Concurrent                  (forkIO,threadDelay)
 import           Control.Concurrent.STM              (newTVarIO)
 import           Control.Distributed.Process.Lifted  (spawnLocal,expect)
 import           Control.Lens                        ((^.))
+import           Control.Monad.IO.Class              (MonadIO(liftIO))
 import           Data.Aeson                          (eitherDecodeStrict
                                                      ,FromJSON(..),ToJSON(..)
                                                      ,genericParseJSON,genericToJSON
@@ -16,17 +19,21 @@ import           Data.Aeson                          (eitherDecodeStrict
 import qualified Data.ByteString.Char8         as B
 import           Data.Char                           (toLower)
 import           Data.Foldable                       (for_)
+import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
+import qualified Data.Text                     as T
 import           GHC.Generics                        (Generic)
 import           Network.Wai.Handler.Warp            (run)
 import           Network.Wai.Middleware.ETag
+import           Network.WebSockets.Connection       (Connection,forkPingThread,sendTextData)
 import           Options.Applicative                 (Parser,ParserInfo
                                                      ,info,fullDesc,progDesc
                                                      ,help,short,long,execParser,strOption
                                                      )
-import           Servant.API                         ((:<|>)((:<|>)))
+import           Servant.API                         ((:<|>)((:<|>)),(:>))
 import           Servant.Utils.StaticFiles           (serveDirectoryFileServer)
 import           Servant.Server                      (serve)
+import           Servant.API.WebSocket               (WebSocket)
 -- language-engine layer
 import           FrameNet.Query.Frame                (loadFrameData)
 import           Lexicon.Data                        (LexDataConfig
@@ -47,7 +54,8 @@ import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeRe
                                                      ,StatusQuery(..),StatusResult(..)
                                                      ,ComputeConfig(..), NetworkConfig(..))
 -- spapi layer
-import           Worker (getStatus,postAnalysis,api)
+import           API
+import           Worker (getStatus,postAnalysis)
 
 
 data SPAPIConfig = SPAPIConfig {
@@ -93,6 +101,10 @@ serverConfig :: ParserInfo ServerConfig
 serverConfig = info pOptions (fullDesc <> progDesc "spapi-server")
 
 
+api :: Proxy ("stream" :> WebSocket :<|> API)
+api = Proxy
+
+
 main :: IO ()
 main = do
   cfg <- execParser serverConfig
@@ -132,9 +144,15 @@ main = do
                 pure ()
         )
     etagcontext <- defaultETagContext False
+    let streamData :: MonadIO m => Connection -> m ()
+        streamData c = do
+          liftIO $ forkPingThread c 10
+          liftIO . for_ [1..] $ \i -> do
+            sendTextData c (T.pack $ show (i :: Int)) >> threadDelay 1000000
     run (spapiPort spapicfg) $
       etag etagcontext NoMaxAge  $
-        serve api (serveDirectoryFileServer (spapiStaticDir spapicfg)  :<|>
-                   postAnalysis framedb rolemap qqvar1       :<|>
-                   getStatus qqvar2
+        serve api (     streamData
+                   :<|> serveDirectoryFileServer (spapiStaticDir spapicfg)
+                   :<|> postAnalysis framedb rolemap qqvar1
+                   :<|> getStatus qqvar2
                   )

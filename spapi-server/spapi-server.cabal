@@ -29,11 +29,13 @@ executable spapi-server
                      , process
                      , servant
                      , servant-server
+                     , servant-websockets
                      , text
                      , unordered-containers
                      , wai
                      , wai-middleware-etag
                      , warp
+                     , websockets
                      --
                      , containers
                      , distributed-process

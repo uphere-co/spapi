@@ -10,7 +10,7 @@ import qualified Data.ByteString.Base64        as B64
 import qualified Data.ByteString.Char8         as B
 import qualified Data.HashMap.Strict           as HM
 import           Data.Maybe                          (fromMaybe)
-import           Data.Proxy                          (Proxy(..))
+-- import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
 import           Data.Text                           (Text)
 -- import qualified Data.Text                     as T
@@ -52,10 +52,7 @@ import           SemanticParserAPI.Type              (InputSentence(..),PNGData(
 import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput)
                                                      ,StatusResult(..))
 -- spapi layer
-import           API
-
-api :: Proxy API
-api = Proxy
+-- import           API
 
 
 withTempFile :: (String,String) -> Int -> (FilePath -> IO a) -> IO a

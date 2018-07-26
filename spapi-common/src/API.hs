@@ -9,7 +9,9 @@ import           Servant.API
 
 import           SemanticParserAPI.Type (APIResult,InputSentence,StatusResult)
 
-type API = "servant" :> Raw :<|> RESTAPI :<|> STATUSAPI
+type API =      "servant" :> Raw
+           :<|> RESTAPI
+           :<|> STATUSAPI
 
 type RESTAPI = "analysis" :> ReqBody '[JSON] InputSentence :> Post '[JSON] APIResult
 
