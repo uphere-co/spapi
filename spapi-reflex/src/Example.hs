@@ -232,8 +232,9 @@ renderNode ::
 renderNode (name,mnum) =
   label (def & labelConfig_image |~ True) $ do
     case mnum of
-      Nothing -> image def $ Left $ Img "images/animals/sheep.png" def
-      Just _  -> image def $ Left $ Img "images/animals/duck.png" def
+      Nothing -> icon "circle" $ def & iconConfig_color |?~ Red
+        -- image def $ Left $ Img "images/animals/sheep.png" def
+      Just _  -> icon "circle" $ def & iconConfig_color |?~ Green -- image def $ Left $ Img "images/animals/duck.png" def
     text name
 
 
