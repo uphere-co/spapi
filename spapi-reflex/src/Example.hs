@@ -83,6 +83,16 @@ import           Reflex.Active (Active(Dyn))
 api :: Proxy API
 api = Proxy
 
+hostAddress :: Text
+hostAddress = "mark"
+
+hostPort :: Int
+hostPort = 9191
+
+httpBase :: BaseUrl
+httpBase = BaseFullUrl Http hostAddress hostPort ""
+
+
 
 restAPI :: Proxy RESTAPI
 restAPI = Proxy
@@ -234,8 +244,7 @@ renderNode (name,mnum) =
   label (def & labelConfig_image |~ True) $ do
     case mnum of
       Nothing -> icon "circle" $ def & iconConfig_color |?~ Red
-        -- image def $ Left $ Img "images/animals/sheep.png" def
-      Just _  -> icon "circle" $ def & iconConfig_color |?~ Green -- image def $ Left $ Img "images/animals/duck.png" def
+      Just _  -> icon "circle" $ def & iconConfig_color |?~ Green
     text name
 
 
@@ -252,10 +261,11 @@ sectionStatus statusCheck = do
     void $ widgetHold blank $
       fmap (mapM_ renderNode . sortBy (compare `on` fst) . view statusNodes) status
   paragraph $ do
-    ws <- textWebSocket "ws://mark:9191/stream" (def :: WebSocketConfig t Text)
+    ws <- textWebSocket
+            ("ws://" <> hostAddress <> ":" <> T.pack (show hostPort) <> "/stream")
+            (def :: WebSocketConfig t Text)
     receivedMessages <- foldDyn (\m ms -> ms ++ [m]) [] $ _webSocket_recv ws
     display receivedMessages
-    -- el "ul" $ simpleList receivedMessages $ \m -> el "li" $ dynText $ fmap decodeUtf8 m
     pure ()
 
 pages :: (MonadWidget t m) => Dynamic t Int -> [m ()] -> m ()
@@ -273,14 +283,12 @@ app =
                          restAPI
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
-                         (constDyn (BasePath "/"))
+                         (constDyn httpBase)
     let statusCheck  = client
                          statusAPI
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
-                         (constDyn (BasePath "/"))
-
-
+                         (constDyn httpBase)
     let mainConfig =  def
             & elConfigAttributes |~ ("id" =: "main")
             & elConfigClasses |~ "ui container"
