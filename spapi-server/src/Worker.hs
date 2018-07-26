@@ -3,20 +3,23 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Worker where
 
+import           Control.Concurrent                  (threadDelay)
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (void)
-import           Control.Monad.IO.Class              (liftIO)
+import           Control.Monad.IO.Class              (MonadIO(liftIO))
 import qualified Data.ByteString.Base64        as B64
 import qualified Data.ByteString.Char8         as B
+import           Data.Foldable                       (for_)
 import qualified Data.HashMap.Strict           as HM
 import           Data.Maybe                          (fromMaybe)
 -- import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
 import           Data.Text                           (Text)
--- import qualified Data.Text                     as T
+import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as TE
 import qualified Data.Text.IO                  as TIO
 import qualified Data.Text.Lazy                as TL
+import           Network.WebSockets.Connection       (Connection,forkPingThread,sendTextData)
 import           Servant.Server                      (Handler)
 import           System.Directory                    (getCurrentDirectory
                                                      ,setCurrentDirectory
@@ -150,3 +153,12 @@ getStatus :: QQVar StatusQuery StatusResult -> Handler S.StatusResult
 getStatus qqvar = do
     SR lst <- liftIO (singleQuery qqvar SQ)
     pure (S.StatusResult lst)
+
+
+wsStream :: MonadIO m => QQVar StatusQuery StatusResult -> Connection -> m ()
+wsStream qqvar c = do
+    liftIO $ forkPingThread c 10
+    liftIO . for_ ([1..] :: [Int]) $ \_ -> do
+      SR lst <- liftIO (singleQuery qqvar SQ)
+      sendTextData c (T.pack $ show lst)
+      threadDelay 1000000

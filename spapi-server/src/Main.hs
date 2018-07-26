@@ -7,11 +7,10 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Main where
 
-import           Control.Concurrent                  (forkIO,threadDelay)
+import           Control.Concurrent                  (forkIO)
 import           Control.Concurrent.STM              (newTVarIO)
 import           Control.Distributed.Process.Lifted  (spawnLocal,expect)
 import           Control.Lens                        ((^.))
-import           Control.Monad.IO.Class              (MonadIO(liftIO))
 import           Data.Aeson                          (eitherDecodeStrict
                                                      ,FromJSON(..),ToJSON(..)
                                                      ,genericParseJSON,genericToJSON
@@ -21,11 +20,9 @@ import           Data.Char                           (toLower)
 import           Data.Foldable                       (for_)
 import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
-import qualified Data.Text                     as T
 import           GHC.Generics                        (Generic)
 import           Network.Wai.Handler.Warp            (run)
-import           Network.Wai.Middleware.ETag
-import           Network.WebSockets.Connection       (Connection,forkPingThread,sendTextData)
+import           Network.Wai.Middleware.ETag         (MaxAge(..),etag,defaultETagContext)
 import           Options.Applicative                 (Parser,ParserInfo
                                                      ,info,fullDesc,progDesc
                                                      ,help,short,long,execParser,strOption
@@ -55,7 +52,7 @@ import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeRe
                                                      ,ComputeConfig(..), NetworkConfig(..))
 -- spapi layer
 import           API
-import           Worker (getStatus,postAnalysis)
+import           Worker (getStatus,postAnalysis,wsStream)
 
 
 data SPAPIConfig = SPAPIConfig {
@@ -105,6 +102,8 @@ api :: Proxy ("stream" :> WebSocket :<|> API)
 api = Proxy
 
 
+
+
 main :: IO ()
 main = do
   cfg <- execParser serverConfig
@@ -115,6 +114,7 @@ main = do
   ecompcfg :: Either String ComputeConfig <- eitherDecodeStrict <$> B.readFile (computeConfig cfg)
   elangcfg :: Either String LexDataConfig <- eitherDecodeStrict <$> B.readFile (langConfig cfg)
   espapicfg :: Either String SPAPIConfig <- eitherDecodeStrict <$> B.readFile (spapiConfig cfg)
+
 
   for_ ((,,) <$> ecompcfg <*> elangcfg <*> espapicfg) $ \(compcfg,langcfg,spapicfg) -> do
     let cport  = port  (computeWeb compcfg)
@@ -144,14 +144,9 @@ main = do
                 pure ()
         )
     etagcontext <- defaultETagContext False
-    let streamData :: MonadIO m => Connection -> m ()
-        streamData c = do
-          liftIO $ forkPingThread c 10
-          liftIO . for_ [1..] $ \i -> do
-            sendTextData c (T.pack $ show (i :: Int)) >> threadDelay 1000000
     run (spapiPort spapicfg) $
       etag etagcontext NoMaxAge  $
-        serve api (     streamData
+        serve api (     wsStream qqvar2
                    :<|> serveDirectoryFileServer (spapiStaticDir spapicfg)
                    :<|> postAnalysis framedb rolemap qqvar1
                    :<|> getStatus qqvar2
