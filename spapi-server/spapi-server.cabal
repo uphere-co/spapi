@@ -21,6 +21,7 @@ executable spapi-server
   build-depends:       base >=4.9 && <4.11
                      , aeson
                      , base64-bytestring
+                     , binary
                      , bytestring
                      , filepath
                      , directory

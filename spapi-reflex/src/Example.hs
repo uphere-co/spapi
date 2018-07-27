@@ -19,7 +19,9 @@ module Example where
 import           Control.Lens ((^.),view)
 import           Control.Monad (void, (<=<))
 import           Control.Monad.Trans.Class (lift)
+import qualified Data.Aeson as A (Value)
 import           Data.Bool (bool)
+import qualified Data.ByteString as B
 import           Data.Foldable (for_)
 import           Data.Function (on)
 import           Data.List (lookup,sortBy)
@@ -254,18 +256,17 @@ sectionStatus ::
        Client t m STATUSAPI ()
     -> RouteWriterT t Text (RouteT t Text m) ()
 sectionStatus statusCheck = do
-  ebtn <- paragraph $ do
-    button def $ text "Status Check"
   paragraph $ do
-    status :: Event t StatusResult <- lift $ lift $ fmapMaybe reqSuccess <$> statusCheck ebtn
-    void $ widgetHold blank $
-      fmap (mapM_ renderNode . sortBy (compare `on` fst) . view statusNodes) status
-  paragraph $ do
-    ws <- textWebSocket
+    ws <-jsonWebSocket
             ("ws://" <> hostAddress <> ":" <> T.pack (show hostPort) <> "/stream")
             (def :: WebSocketConfig t Text)
-    receivedMessages <- foldDyn (\m ms -> ms ++ [m]) [] $ _webSocket_recv ws
-    display receivedMessages
+    let emstatus = _webSocket_recv ws
+    void $ widgetHold blank $
+      flip fmap emstatus $ \mstatus ->
+        case mstatus of
+          Nothing -> blank
+          Just status ->
+            mapM_ renderNode $ sortBy (compare `on` fst) $ view statusNodes $ status
     pure ()
 
 pages :: (MonadWidget t m) => Dynamic t Int -> [m ()] -> m ()
