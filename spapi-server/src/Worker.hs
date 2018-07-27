@@ -7,7 +7,6 @@ import           Control.Concurrent                  (threadDelay)
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (void)
 import           Control.Monad.IO.Class              (MonadIO(liftIO))
--- import qualified Data.Binary                   as Bi
 import qualified Data.Aeson                    as A
 import qualified Data.ByteString.Base64        as B64
 import qualified Data.ByteString.Char8         as B
@@ -15,14 +14,11 @@ import qualified Data.ByteString.Lazy.Char8    as BL
 import           Data.Foldable                       (for_)
 import qualified Data.HashMap.Strict           as HM
 import           Data.Maybe                          (fromMaybe)
--- import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
 import           Data.Text                           (Text)
--- import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as TE
 import qualified Data.Text.IO                  as TIO
 import qualified Data.Text.Lazy                as TL
--- import           Network.WebSockets                  (DataMessage(..))
 import           Network.WebSockets.Connection       (Connection
                                                      ,forkPingThread,sendTextData)
 import           Servant.Server                      (Handler)
@@ -59,8 +55,7 @@ import           SemanticParserAPI.Type              (InputSentence(..),PNGData(
 
 import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput)
                                                      ,StatusResult(..))
--- spapi layer
--- import           API
+
 
 
 withTempFile :: (String,String) -> Int -> (FilePath -> IO a) -> IO a
@@ -167,8 +162,6 @@ wsStream qqvar conn = do
     liftIO $ for_ ([1..] :: [Int]) $ \_ -> do
       SR lst <- liftIO (singleQuery qqvar SQ)
       let statusData = S.StatusResult lst
-      -- sendTextData c (T.pack $ show lst)
-      -- let statusData = -- Binary (Bi.encode lst)
       liftIO $ print statusData
-      sendTextData conn (TE.decodeUtf8 (BL.toStrict (A.encode statusData))) -- statusData
+      sendTextData conn (TE.decodeUtf8 (BL.toStrict (A.encode statusData)))
       threadDelay 1000000
