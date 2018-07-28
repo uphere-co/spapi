@@ -240,13 +240,13 @@ sectionReuters = do
 
 renderNode ::
      forall t m. (MonadWidget t m) =>
-     (Text,Maybe Int)
+     (Text,Bool)
   -> m ()
-renderNode (name,mnum) =
+renderNode (name,status) =
   label (def & labelConfig_image |~ True) $ do
-    case mnum of
-      Nothing -> icon "circle" $ def & iconConfig_color |?~ Red
-      Just _  -> icon "circle" $ def & iconConfig_color |?~ Green
+    case status of
+      False -> icon "circle" $ def & iconConfig_color |?~ Red
+      True  -> icon "circle" $ def & iconConfig_color |?~ Green
     text name
 
 
