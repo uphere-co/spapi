@@ -46,8 +46,8 @@ import           SRL.Analyze.Type                    (MeaningGraph
 -- compute-pipeline layer
 import           CloudHaskell.QueryQueue             (QQVar,singleQuery)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
-                                                     ,StatusQuery(..),StatusResult(..)
                                                      ,ResultSentence(..))
+import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
 import           SemanticParserAPI.Type              (InputSentence(..),PNGData(..),APIResult(..)
                                                      ,DefRoot(..),CContent(..),EContent(..)
                                                      ,SVGData(..)

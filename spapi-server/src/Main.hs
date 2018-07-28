@@ -48,8 +48,8 @@ import           CloudHaskell.Type                   (TCPPort(..),Gateway(..))
 import           CloudHaskell.Util                   (lookupRouter,tellLog)
 import           SemanticParserAPI.Compute.Task      (rtable)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
-                                                     ,StatusQuery(..),StatusResult(..)
                                                      ,ComputeConfig(..), NetworkConfig(..))
+import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
 -- spapi layer
 import           API
 import           Worker (getStatus,postAnalysis,wsStream)
