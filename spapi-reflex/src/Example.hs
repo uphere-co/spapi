@@ -102,6 +102,8 @@ restAPI = Proxy
 statusAPI :: Proxy STATUSAPI
 statusAPI = Proxy
 
+corenlpAPI :: Proxy CORENLPAPI
+corenlpAPI = Proxy
 
 runWithLoader :: MonadWidget t m => m ()
 runWithLoader = do
@@ -255,14 +257,18 @@ sectionStatus ::
       forall t m.
        (SupportsServantReflex t m, MonadWidget t m, Monad m) =>
        Client t m STATUSAPI ()
+    -> Client t m CORENLPAPI ()
     -> RouteWriterT t Text (RouteT t Text m) ()
-sectionStatus statusCheck = do
-  r <- paragraph $ do
-    ebtn1 <- button def $ text "mark1"
-    ebtn2 <- button def $ text "mark2"
+sectionStatus statusCheck postCoreNLP = do
+  ebtn <- paragraph $ button def $ text "test"
+  let dtxt = constDyn (Right "I love you")
+  response <- lift $ lift $ fmapMaybe reqSuccess <$> postCoreNLP dtxt ebtn
+  d <- holdDyn "" (fmap (T.pack . show) response)
+  display d
+  {-   ebtn2 <- button def $ text "mark2"
     ebtn3 <- button def $ text "mark3"
     ebtn4 <- button def $ text "mark4"
-    pure (ebtn1,ebtn2,ebtn3,ebtn4)
+    pure (ebtn1,ebtn2,ebtn3,ebtn4) -}
   paragraph $ do
     ws <-jsonWebSocket
             ("ws://" <> hostAddress <> ":" <> T.pack (show hostPort) <> "/stream")
@@ -294,6 +300,11 @@ app =
                          (constDyn httpBase)
     let statusCheck  = client
                          statusAPI
+                         (Proxy :: Proxy m)
+                         (Proxy :: Proxy ())
+                         (constDyn httpBase)
+    let postcorenlp  = client
+                         corenlpAPI
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn httpBase)
@@ -348,7 +359,8 @@ app =
 
       pages dmode [ sectionSentence postanalysis
                   , sectionReuters
-                  , sectionStatus statusCheck]
+                  , sectionStatus statusCheck postcorenlp
+                  ]
 
     -- Footer
     segment (def & segmentConfig_vertical |~ True

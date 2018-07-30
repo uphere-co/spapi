@@ -44,13 +44,15 @@ executable spapi-server
                      , distributed-process-lifted
                      , stm
                      --
-                     , cloud-haskell-util
-                     , compute-worker
                      , HFrameNet
                      , lexicon
                      , lexicon-builder
                      , semantic-role-labeler
                      , semantic-types
+                     --
+                     , cloud-haskell-util
+                     , compute-worker
+                     , task-corenlp
                      --
                      , spapi-common
   hs-source-dirs:      src

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 module Handler where
 
 import           Control.Concurrent                  (threadDelay)
@@ -6,6 +7,8 @@ import           Control.Monad.IO.Class              (MonadIO(liftIO))
 import qualified Data.Aeson                    as A
 import qualified Data.ByteString.Lazy.Char8    as BL
 import           Data.Foldable                       (for_)
+import           Data.Text                           (Text)
+import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as TE
 import           Network.WebSockets.Connection       (Connection
                                                      ,forkPingThread,sendTextData)
@@ -26,6 +29,7 @@ import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusRe
 import           SemanticParserAPI.Type              (InputSentence(..),APIResult(..))
 import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput)
                                                      ,StatusResult(..))
+import           Task.CoreNLP (QCoreNLP(..),RCoreNLP(..))
 --
 import Worker (allFrames,createDotGraph,createOGDFSVG,mkFrameNetData)
 
@@ -62,3 +66,11 @@ wsStream qqvar conn = do
       liftIO $ print statusData
       sendTextData conn (TE.decodeUtf8 (BL.toStrict (A.encode statusData)))
       threadDelay 1000000
+
+postCoreNLP ::
+     QQVar QCoreNLP RCoreNLP
+  -> Text
+  -> Handler Text
+postCoreNLP qqvar txt = do
+  RCoreNLP doc <- liftIO (singleQuery qqvar (QCoreNLP txt))
+  pure (T.pack (show doc))

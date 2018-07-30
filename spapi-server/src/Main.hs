@@ -50,9 +50,10 @@ import           SemanticParserAPI.Compute.Task      (rtable)
 import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
                                                      ,ComputeConfig(..), NetworkConfig(..))
 import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
+import           Task.CoreNLP                        (QCoreNLP,RCoreNLP)
 -- spapi layer
 import           API
-import           Handler (getStatus,postAnalysis,wsStream)
+import           Handler (getStatus,postAnalysis,wsStream,postCoreNLP)
 
 
 data SPAPIConfig = SPAPIConfig {
@@ -110,6 +111,7 @@ main = do
 
   qqvar1 <- newTVarIO emptyQQ
   qqvar2 <- newTVarIO emptyQQ
+  qqvar3 <- newTVarIO emptyQQ
 
   ecompcfg :: Either String ComputeConfig <- eitherDecodeStrict <$> B.readFile (computeConfig cfg)
   elangcfg :: Either String LexDataConfig <- eitherDecodeStrict <$> B.readFile (langConfig cfg)
@@ -137,9 +139,13 @@ main = do
                 spid0 <- lookupRouter "query" router
                 tellLog $ "spid0 = " ++ show spid0
                 spid1 <- lookupRouter "test" router
-                tellLog $ "spid0 = " ++ show spid1
+                tellLog $ "spid1 = " ++ show spid1
+                spid2 <- lookupRouter "corenlp" router
+                tellLog $ "spid2 = " ++ show spid2
+
                 spawnLocal $ serviceHandshake spid0 (clientUnit @ComputeQuery @ComputeResult qqvar1)
                 spawnLocal $ serviceHandshake spid1 (clientUnit @StatusQuery @StatusResult qqvar2)
+                spawnLocal $ serviceHandshake spid2 (clientUnit @QCoreNLP @RCoreNLP qqvar3)
                 () <- expect -- indefinite wait. TODO: make this more idiomatic
                 pure ()
         )
@@ -150,4 +156,5 @@ main = do
                    :<|> serveDirectoryFileServer (spapiStaticDir spapicfg)
                    :<|> postAnalysis framedb rolemap qqvar1
                    :<|> getStatus qqvar2
+                   :<|> postCoreNLP qqvar3
                   )
