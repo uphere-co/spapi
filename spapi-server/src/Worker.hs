@@ -3,15 +3,10 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Worker where
 
-import           Control.Concurrent                  (threadDelay)
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (void)
-import           Control.Monad.IO.Class              (MonadIO(liftIO))
-import qualified Data.Aeson                    as A
 import qualified Data.ByteString.Base64        as B64
 import qualified Data.ByteString.Char8         as B
-import qualified Data.ByteString.Lazy.Char8    as BL
-import           Data.Foldable                       (for_)
 import qualified Data.HashMap.Strict           as HM
 import           Data.Maybe                          (fromMaybe)
 import           Data.Semigroup                      ((<>))
@@ -19,9 +14,6 @@ import           Data.Text                           (Text)
 import qualified Data.Text.Encoding            as TE
 import qualified Data.Text.IO                  as TIO
 import qualified Data.Text.Lazy                as TL
-import           Network.WebSockets.Connection       (Connection
-                                                     ,forkPingThread,sendTextData)
-import           Servant.Server                      (Handler)
 import           System.Directory                    (getCurrentDirectory
                                                      ,setCurrentDirectory
                                                      ,getTemporaryDirectory
@@ -32,30 +24,16 @@ import           System.Process                      (readProcess)
 import           FrameNet.Query.Frame                (FrameDB,frameDB)
 import qualified FrameNet.Type.Definition      as F
 import           FrameNet.Type.Frame                 (frame_definition)
-import           Lexicon.Type                        (RoleInstance)
 import           NLP.Semantics.Type                  (MeaningRoleContent(..),MeaningTree(..)
                                                      ,mt_frame,mt_arguments,mt_subordinates
                                                      ,mr_content,po_main)
-import           SRL.Analyze.ARB                     (mkARB)
 import           SRL.Analyze.Format                  (dotMeaningGraph)
 import           SRL.Analyze.Format.OGDF             (mkOGDFSVG)
-import           SRL.Analyze.MeaningTree             (mkMeaningTree)
-import           SRL.Analyze.Type                    (MeaningGraph
-                                                     ,outputDocStructure,outputMatchedFrames
-                                                     ,outputX'tree)
+import           SRL.Analyze.Type                    (MeaningGraph)
 -- compute-pipeline layer
-import           CloudHaskell.QueryQueue             (QQVar,singleQuery)
-import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
-                                                     ,ResultSentence(..))
-import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
-import           SemanticParserAPI.Type              (InputSentence(..),PNGData(..),APIResult(..)
+import           SemanticParserAPI.Type              (PNGData(..),SVGData(..)
                                                      ,DefRoot(..),CContent(..),EContent(..)
-                                                     ,SVGData(..)
                                                      )
-
-import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput)
-                                                     ,StatusResult(..))
-
 
 
 withTempFile :: (String,String) -> Int -> (FilePath -> IO a) -> IO a
@@ -132,36 +110,3 @@ mkFrameNetData framemap fname = fromMaybe (fname,DefRoot []) $ do
       defroot0 = F.p_defRoot (TL.fromStrict txt)
   return (fname,convertDefRoot defroot0)
 
-postAnalysis ::
-     FrameDB
-  -> [RoleInstance]
-  -> QQVar ComputeQuery ComputeResult
-  -> InputSentence
-  -> Handler APIResult
-postAnalysis framedb rolemap qqvar (InputSentence sent) = do
-  CR_Sentence (ResultSentence _ tokss mgs cout) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
-  dots <- liftIO $ mapM createDotGraph mgs
-  svgs <- liftIO $ mapM createOGDFSVG (zip [1..] mgs)
-  let mts = concatMap (mkMeaningTree rolemap) mgs
-      arbs = concatMap (mkARB rolemap) mgs
-      fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
-      cout' = S.ConsoleOutput (cout^.outputX'tree) (cout^.outputDocStructure) (cout^.outputMatchedFrames)
-  pure (APIResult tokss mts arbs dots svgs fns cout')
-
-
-getStatus :: QQVar StatusQuery StatusResult -> Handler S.StatusResult
-getStatus qqvar = do
-    SR lst <- liftIO (singleQuery qqvar SQ)
-    pure (S.StatusResult lst)
-
-
-
-wsStream :: MonadIO m => QQVar StatusQuery StatusResult -> Connection -> m ()
-wsStream qqvar conn = do
-    liftIO $ forkPingThread conn 10
-    liftIO $ for_ ([1..] :: [Int]) $ \_ -> do
-      SR lst <- liftIO (singleQuery qqvar SQ)
-      let statusData = S.StatusResult lst
-      liftIO $ print statusData
-      sendTextData conn (TE.decodeUtf8 (BL.toStrict (A.encode statusData)))
-      threadDelay 1000000

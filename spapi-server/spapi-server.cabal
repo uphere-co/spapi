@@ -16,7 +16,8 @@ cabal-version:       >=1.10
 
 executable spapi-server
   main-is:             Main.hs
-  other-modules:       Worker
+  other-modules:       Handler
+                       Worker
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11
                      , aeson

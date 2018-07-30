@@ -52,7 +52,7 @@ import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeRe
 import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
 -- spapi layer
 import           API
-import           Worker (getStatus,postAnalysis,wsStream)
+import           Handler (getStatus,postAnalysis,wsStream)
 
 
 data SPAPIConfig = SPAPIConfig {

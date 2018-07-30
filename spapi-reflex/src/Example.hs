@@ -240,13 +240,14 @@ sectionReuters = do
 
 renderNode ::
      forall t m. (MonadWidget t m) =>
-     (Text,Bool)
+     (Text,Maybe Bool)
   -> m ()
 renderNode (name,status) =
   label (def & labelConfig_image |~ True) $ do
     case status of
-      False -> icon "circle" $ def & iconConfig_color |?~ Red
-      True  -> icon "circle" $ def & iconConfig_color |?~ Green
+      Nothing    -> icon "circle" $ def & iconConfig_color |?~ Red
+      Just False -> icon "circle" $ def & iconConfig_color |?~ Green
+      Just True  -> icon "circle" $ def & iconConfig_color |?~ Yellow
     text name
 
 
@@ -256,6 +257,12 @@ sectionStatus ::
        Client t m STATUSAPI ()
     -> RouteWriterT t Text (RouteT t Text m) ()
 sectionStatus statusCheck = do
+  r <- paragraph $ do
+    ebtn1 <- button def $ text "mark1"
+    ebtn2 <- button def $ text "mark2"
+    ebtn3 <- button def $ text "mark3"
+    ebtn4 <- button def $ text "mark4"
+    pure (ebtn1,ebtn2,ebtn3,ebtn4)
   paragraph $ do
     ws <-jsonWebSocket
             ("ws://" <> hostAddress <> ":" <> T.pack (show hostPort) <> "/stream")
