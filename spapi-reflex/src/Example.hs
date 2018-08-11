@@ -263,12 +263,15 @@ sectionStatus statusCheck postCoreNLP = do
   ebtn <- paragraph $ button def $ text "test"
   let dtxt = constDyn (Right "I love you")
   response <- lift $ lift $ fmapMaybe reqSuccess <$> postCoreNLP dtxt ebtn
-  d <- holdDyn "" (fmap (T.pack . show) response)
-  display d
-  {-   ebtn2 <- button def $ text "mark2"
-    ebtn3 <- button def $ text "mark3"
-    ebtn4 <- button def $ text "mark4"
-    pure (ebtn1,ebtn2,ebtn3,ebtn4) -}
+  e <- count ebtn
+  d <- count (response)
+    -- holdDyn "" (fmap (T.pack . show) response)
+  paragraph $ do
+    text "Clicked"
+    display e
+  paragraph $ do
+    text "Served"
+    display d
   paragraph $ do
     ws <-jsonWebSocket
             ("ws://" <> hostAddress <> ":" <> T.pack (show hostPort) <> "/stream")
