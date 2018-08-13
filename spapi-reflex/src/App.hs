@@ -58,7 +58,7 @@ import           Reflex.Active (Active(Dyn))
 import           ARBView (arbView)
 import           Console (consoleBox)
 import           Sample
-import           StatusView (renderNode)
+import           StatusView (renderStatus)
 
 
 
@@ -251,7 +251,7 @@ sectionStatus statusCheck postCoreNLP = do
         case mstatus of
           Nothing -> blank
           Just status ->
-            mapM_ renderNode $ sortBy (compare `on` fst) $ view statusNodes $ status
+            renderStatus $ sortBy (compare `on` fst) $ view statusNodes status
     pure ()
 
 pages :: (MonadWidget t m) => Dynamic t Int -> [m ()] -> m ()
