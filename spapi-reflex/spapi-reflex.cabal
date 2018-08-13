@@ -18,8 +18,9 @@ library
   exposed-modules:
       App
     , ARBView
-    , Console            
+    , Console
     , Sample
+    , StatusView
     , Util
   other-modules:
 

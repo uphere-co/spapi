@@ -51,14 +51,15 @@ import           SemanticParserAPI.Type (InputSentence(..)
                                         ,png_data
                                         ,svg_data
                                         ,statusNodes)
+import           API
+import           Servant.Reflex
+import           Reflex.Active (Active(Dyn))
+--
 import           ARBView (arbView)
 import           Console (consoleBox)
 import           Sample
+import           StatusView (renderNode)
 
-import           API
-import           Servant.Reflex
-
-import           Reflex.Active (Active(Dyn))
 
 
 
@@ -219,22 +220,6 @@ sectionReuters = do
   paragraph $ do
     text "Reuters section will be here."
 
-
-renderNode ::
-     forall t m. (MonadWidget t m) =>
-     (Text,Maybe (Bool,Int))
-  -> m ()
-renderNode (name,status) =
-  label (def & labelConfig_image |~ True) $ do
-    case status of
-      Nothing    -> icon "circle" $ def & iconConfig_color |?~ Red
-      Just (False,n) -> do
-        icon "circle" $ def & iconConfig_color |?~ Green
-        text (T.pack (show n))
-      Just (True,n)  -> do
-        icon "circle" $ def & iconConfig_color |?~ Yellow
-        text (T.pack (show n))
-    text name
 
 
 sectionStatus ::
