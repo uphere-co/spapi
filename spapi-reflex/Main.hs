@@ -3,7 +3,7 @@
 
 module Main where
 
-import qualified Example
+import qualified App
 
 #ifndef ghcjs_HOST_OS
 
@@ -17,24 +17,9 @@ main :: IO ()
 
 #ifdef ghcjs_HOST_OS
 
-main = Example.main
+main = App.main
 
 #else
 
-port :: Int
-port = 8080
-
-css :: ByteString
-css = $(embedFile =<< makeRelativeToProject "resources/styling.css")
-
-static :: Maybe FilePath
-static = Just $(strToExp =<< makeRelativeToProject "resources")
-
--- | Start the warp server
-main = server port css Example.main static
-
--- | Restart the warp server and tell any connected clients to refresh
-debug :: IO ()
-debug = daemon port css Example.main static
 
 #endif

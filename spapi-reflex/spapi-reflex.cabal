@@ -16,32 +16,12 @@ library
   hs-source-dirs: src
 
   exposed-modules:
-      ARBView
+      App
+    , ARBView
     , Console            
-    , Example
     , Sample
     , Util
   other-modules:
-      Example.StateEnum
-    , Example.CountryEnum
-    , Example.QQ
-    , Example.Common
-    , Example.Section.Buttons
-    , Example.Section.Checkbox
-    , Example.Section.Dimmer
-    , Example.Section.Divider
-    , Example.Section.Dropdown
-    , Example.Section.Flag
-    , Example.Section.Header
-    , Example.Section.Icon
-    , Example.Section.Input
-    , Example.Section.Label
-    , Example.Section.List
-    , Example.Section.Menu
-    , Example.Section.Message
-    , Example.Section.Progress
-    , Example.Section.RadioGroup
-    , Example.Section.Transition
 
   build-depends:
       base            >= 4.8 && < 4.10

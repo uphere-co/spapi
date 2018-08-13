@@ -14,7 +14,7 @@
 
 {-# OPTIONS_GHC -Wno-name-shadowing -Wno-unused-do-bind -fprint-explicit-kinds #-}
 
-module Example where
+module App where
 
 import           Control.Lens ((^.),view)
 import           Control.Monad (void, (<=<))
@@ -37,26 +37,6 @@ import           Reflex.Dom.Core (text)
 import           Reflex.Dom.Routing.Writer
 import           Reflex.Dom.Routing.Nested
 import           Language.Javascript.JSaddle hiding ((!!))
-
-
-import           Example.QQ
-import           Example.Common
-
-import           Example.Section.Buttons (buttonSection)
-import           Example.Section.Checkbox (checkboxes)
-import           Example.Section.Dimmer (dimmers)
-import           Example.Section.Divider (dividers)
-import           Example.Section.Dropdown (dropdowns)
-import           Example.Section.Flag (flags)
-import           Example.Section.Header
-import           Example.Section.Icon (iconSection)
-import           Example.Section.Input (inputs)
-import           Example.Section.Label (labels)
-import           Example.Section.List (lists)
-import           Example.Section.Message (messages)
-import           Example.Section.Progress (progressSection)
-import           Example.Section.RadioGroup (radioGroups)
-import           Example.Section.Transition (transitions)
 --
 import           NLP.Semantics.Type (ARB(..))
 import           SemanticParserAPI.Type (InputSentence(..)
@@ -242,14 +222,18 @@ sectionReuters = do
 
 renderNode ::
      forall t m. (MonadWidget t m) =>
-     (Text,Maybe Bool)
+     (Text,Maybe (Bool,Int))
   -> m ()
 renderNode (name,status) =
   label (def & labelConfig_image |~ True) $ do
     case status of
       Nothing    -> icon "circle" $ def & iconConfig_color |?~ Red
-      Just False -> icon "circle" $ def & iconConfig_color |?~ Green
-      Just True  -> icon "circle" $ def & iconConfig_color |?~ Yellow
+      Just (False,n) -> do
+        icon "circle" $ def & iconConfig_color |?~ Green
+        text (T.pack (show n))
+      Just (True,n)  -> do
+        icon "circle" $ def & iconConfig_color |?~ Yellow
+        text (T.pack (show n))
     text name
 
 
