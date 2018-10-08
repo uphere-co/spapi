@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-unused-imports #-}
-module Handler where
+module SemanticParserAPI.Server.Handler where
 
 import           Control.Concurrent                  (threadDelay)
 import           Control.Lens                        ((^.))
@@ -31,7 +30,13 @@ import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutpu
                                                      ,StatusResult(..))
 import           Task.CoreNLP (QCoreNLP(..),RCoreNLP(..))
 --
-import Worker (allFrames,createDotGraph,createOGDFSVG,mkFrameNetData)
+import           SemanticParserAPI.Server.Worker
+                 ( allFrames
+                 , createDotGraph
+                 , createOGDFSVG
+                 , mkFrameNetData
+                 )
+
 
 postAnalysis ::
      FrameDB

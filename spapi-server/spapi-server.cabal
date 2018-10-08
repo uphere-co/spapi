@@ -16,19 +16,43 @@ cabal-version:       >=1.10
 
 library
   ghc-options:         -Wall -Werror -O2
-  exposed-modules:     SemanticParserAPI.Server.Type
+  exposed-modules:     SemanticParserAPI.Server.Handler
+                       SemanticParserAPI.Server.Type
+                       SemanticParserAPI.Server.Worker
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11
                      , aeson
+                     , base64-bytestring
+                     , bytestring
+                     , directory
+                     , filepath
+                     , lens
+                     , process
+                     , servant
+                     , servant-server
+
                      , text
+                     , unordered-containers
+                     , websockets
+                     --
+                     , HFrameNet
+                     , lexicon
+                     , semantic-role-labeler
+                     , semantic-types
+                     --
+                     , cloud-haskell-util
+                     , compute-worker
+                     , task-corenlp
+                     --
+                     , spapi-common
+
+
   hs-source-dirs:      src
   default-language:    Haskell2010
 
 
 executable spapi-server
   main-is:             Main.hs
-  other-modules:       Handler
-                       Worker
   -- other-extensions:
   build-depends:       base >=4.9 && <4.11
                      , aeson

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Worker where
+module SemanticParserAPI.Server.Worker where
 
 import           Control.Lens                        ((^.),(^..))
 import           Control.Monad                       (void)

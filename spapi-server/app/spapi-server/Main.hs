@@ -50,13 +50,18 @@ import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeRe
 import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
 import           Task.CoreNLP                        (QCoreNLP,RCoreNLP)
 -- spapi layer
+import           API
+import           SemanticParserAPI.Server.Handler
+                 ( getStatus
+                 , postAnalysis
+                 , wsStream
+                 , postCoreNLP
+                 )
 import           SemanticParserAPI.Server.Type
                  ( ShowError(..)
                  , SPAPIConfig(..)
                  , SPAPIServerError(..)
                  )
-import           API
-import           Handler (getStatus,postAnalysis,wsStream,postCoreNLP)
 
 
 data ServerConfig = ServerConfig {
@@ -117,7 +122,7 @@ main = do
         rolemapfile = langcfg ^. cfg_rolemap_file
     framedb <- liftIO $ loadFrameData framedir
     rolemap <- liftIO $ loadRoleInsts rolemapfile
-    liftIO $ forkIO $
+    _ <- liftIO $ forkIO $
       client
         rtable
         (cport,chostg,chostl,shostg,sport)
