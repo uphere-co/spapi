@@ -31,9 +31,6 @@ import           Servant.Server                      (serve)
 import           Servant.API.WebSocket               (WebSocket)
 -- language-engine layer
 import           FrameNet.Query.Frame                (loadFrameData)
-{- import           Lexicon.Data                        (LexDataConfig
-                                                     ,cfg_framenet_framedir
-                                                     ,cfg_rolemap_file) -}
 import           Lexicon.Query                       (loadRoleInsts)
 import           SRL.Analyze.Config (
                    SRLConfig
