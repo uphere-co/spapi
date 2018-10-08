@@ -31,10 +31,15 @@ import           Servant.Server                      (serve)
 import           Servant.API.WebSocket               (WebSocket)
 -- language-engine layer
 import           FrameNet.Query.Frame                (loadFrameData)
-import           Lexicon.Data                        (LexDataConfig
+{- import           Lexicon.Data                        (LexDataConfig
                                                      ,cfg_framenet_framedir
-                                                     ,cfg_rolemap_file)
+                                                     ,cfg_rolemap_file) -}
 import           Lexicon.Query                       (loadRoleInsts)
+import           SRL.Analyze.Config (
+                   SRLConfig
+                 , srlcfg_framenet_framedir
+                 , srlcfg_rolemap_file
+                 )
 -- compute-pipeline layer
 import           CloudHaskell.Client                 (client
                                                      ,clientUnit
@@ -106,9 +111,9 @@ main = do
     compcfg  <- withExceptT (\x -> SPAPIServerConfigError ("ComputeConfig: " <> T.pack x)) $
                   ExceptT $
                     eitherDecodeStrict @ComputeConfig <$> B.readFile (computeConfig cfg)
-    langcfg  <- withExceptT (\x -> SPAPIServerConfigError ("LexDataConfig: " <> T.pack x)) $
+    langcfg  <- withExceptT (\x -> SPAPIServerConfigError ("SRLConfig: " <> T.pack x)) $
                   ExceptT $
-                    eitherDecodeStrict @LexDataConfig <$> B.readFile (langConfig cfg)
+                    eitherDecodeStrict @SRLConfig <$> B.readFile (langConfig cfg)
     spapicfg <- withExceptT (\x -> SPAPIServerConfigError ("SPAPIConfig: " <> T.pack x)) $
                   ExceptT $
                     eitherDecodeStrict <$> B.readFile (spapiConfig cfg)
@@ -118,8 +123,8 @@ main = do
         chostl = hostl (computeWeb compcfg)
         shostg = hostg (computeServer compcfg)
         sport  = TCPPort (port  (computeServer compcfg))
-        framedir = langcfg ^. cfg_framenet_framedir
-        rolemapfile = langcfg ^. cfg_rolemap_file
+        framedir = langcfg ^. srlcfg_framenet_framedir
+        rolemapfile = langcfg ^. srlcfg_rolemap_file
     framedb <- liftIO $ loadFrameData framedir
     rolemap <- liftIO $ loadRoleInsts rolemapfile
     _ <- liftIO $ forkIO $
