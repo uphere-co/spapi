@@ -14,6 +14,17 @@ category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
 
+library
+  ghc-options:         -Wall -Werror -O2
+  exposed-modules:     SemanticParserAPI.Server.Type
+  -- other-extensions:
+  build-depends:       base >=4.9 && <4.11
+                     , aeson
+                     , text
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+
 executable spapi-server
   main-is:             Main.hs
   other-modules:       Handler
@@ -24,8 +35,8 @@ executable spapi-server
                      , base64-bytestring
                      , binary
                      , bytestring
-                     , filepath
                      , directory
+                     , filepath
                      , lens
                      , optparse-applicative
                      , process
@@ -33,6 +44,7 @@ executable spapi-server
                      , servant-server
                      , servant-websockets
                      , text
+                     , transformers
                      , unordered-containers
                      , wai
                      , wai-middleware-etag
@@ -55,7 +67,8 @@ executable spapi-server
                      , task-corenlp
                      --
                      , spapi-common
-  hs-source-dirs:      src
+                     , spapi-server
+  hs-source-dirs:      app/spapi-server
   default-language:    Haskell2010
   ghc-options:         -Wall
                        -Werror

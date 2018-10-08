@@ -4,23 +4,21 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+-- {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Main where
 
 import           Control.Concurrent                  (forkIO)
 import           Control.Concurrent.STM              (newTVarIO)
 import           Control.Distributed.Process.Lifted  (spawnLocal,expect)
 import           Control.Lens                        ((^.))
-import           Data.Aeson                          (eitherDecodeStrict
-                                                     ,FromJSON(..),ToJSON(..)
-                                                     ,genericParseJSON,genericToJSON
-                                                     ,defaultOptions,fieldLabelModifier)
-import qualified Data.ByteString.Char8         as B
-import           Data.Char                           (toLower)
-import           Data.Foldable                       (for_)
+import           Control.Monad.IO.Class              (liftIO)
+import           Control.Monad.Trans.Except          (ExceptT(..),runExceptT,withExceptT)
+import           Data.Aeson                          (eitherDecodeStrict)
+import qualified Data.ByteString.Char8 as B
 import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
-import           GHC.Generics                        (Generic)
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import           Network.Wai.Handler.Warp            (run)
 import           Network.Wai.Middleware.ETag         (MaxAge(..),etag,defaultETagContext)
 import           Options.Applicative                 (Parser,ParserInfo
@@ -52,34 +50,14 @@ import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeRe
 import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
 import           Task.CoreNLP                        (QCoreNLP,RCoreNLP)
 -- spapi layer
+import           SemanticParserAPI.Server.Type
+                 ( ShowError(..)
+                 , SPAPIConfig(..)
+                 , SPAPIServerError(..)
+                 )
 import           API
 import           Handler (getStatus,postAnalysis,wsStream,postCoreNLP)
 
-
-data SPAPIConfig = SPAPIConfig {
-                     spapiStaticDir :: FilePath
-                   , spapiPort      :: Int
-                   }
-                 deriving (Show,Eq,Ord,Generic)
-
-instance FromJSON SPAPIConfig where
-  parseJSON = genericParseJSON
-                defaultOptions {
-                  fieldLabelModifier = \name ->
-                    case drop 5 name of
-                      x : xs -> toLower x : xs
-                      xs -> xs
-                }
-
-
-instance ToJSON SPAPIConfig where
-  toJSON = genericToJSON
-             defaultOptions {
-               fieldLabelModifier = \name ->
-                 case drop 5 name of
-                   x : xs -> toLower x : xs
-                   xs -> xs
-             }
 
 data ServerConfig = ServerConfig {
                       computeConfig :: FilePath
@@ -103,22 +81,33 @@ api :: Proxy ("stream" :> WebSocket :<|> API)
 api = Proxy
 
 
+handleError :: (ShowError e) => ExceptT e IO () -> IO ()
+handleError action = do
+  r <- runExceptT action
+  case r of
+    Left e -> TIO.putStrLn (showError e)
+    Right _ -> pure ()
 
 
 main :: IO ()
 main = do
-  cfg <- execParser serverConfig
+  handleError $ do
+    cfg <- liftIO $ execParser serverConfig
 
-  qqvar1 <- newTVarIO emptyQQ
-  qqvar2 <- newTVarIO emptyQQ
-  qqvar3 <- newTVarIO emptyQQ
+    qqvar1 <- liftIO $ newTVarIO emptyQQ
+    qqvar2 <- liftIO $ newTVarIO emptyQQ
+    qqvar3 <- liftIO $ newTVarIO emptyQQ
 
-  ecompcfg :: Either String ComputeConfig <- eitherDecodeStrict <$> B.readFile (computeConfig cfg)
-  elangcfg :: Either String LexDataConfig <- eitherDecodeStrict <$> B.readFile (langConfig cfg)
-  espapicfg :: Either String SPAPIConfig <- eitherDecodeStrict <$> B.readFile (spapiConfig cfg)
-
-
-  for_ ((,,) <$> ecompcfg <*> elangcfg <*> espapicfg) $ \(compcfg,langcfg,spapicfg) -> do
+    compcfg  <- withExceptT (\x -> SPAPIServerConfigError ("ComputeConfig: " <> T.pack x)) $
+                  ExceptT $
+                    eitherDecodeStrict @ComputeConfig <$> B.readFile (computeConfig cfg)
+    langcfg  <- withExceptT (\x -> SPAPIServerConfigError ("LexDataConfig: " <> T.pack x)) $
+                  ExceptT $
+                    eitherDecodeStrict @LexDataConfig <$> B.readFile (langConfig cfg)
+    spapicfg <- withExceptT (\x -> SPAPIServerConfigError ("SPAPIConfig: " <> T.pack x)) $
+                  ExceptT $
+                    eitherDecodeStrict <$> B.readFile (spapiConfig cfg)
+    liftIO $ print (compcfg,langcfg,spapicfg)
     let cport  = port  (computeWeb compcfg)
         chostg = hostg (computeWeb compcfg)
         chostl = hostl (computeWeb compcfg)
@@ -126,9 +115,9 @@ main = do
         sport  = TCPPort (port  (computeServer compcfg))
         framedir = langcfg ^. cfg_framenet_framedir
         rolemapfile = langcfg ^. cfg_rolemap_file
-    framedb <- loadFrameData framedir
-    rolemap <- loadRoleInsts rolemapfile
-    forkIO $
+    framedb <- liftIO $ loadFrameData framedir
+    rolemap <- liftIO $ loadRoleInsts rolemapfile
+    liftIO $ forkIO $
       client
         rtable
         (cport,chostg,chostl,shostg,sport)
@@ -143,14 +132,14 @@ main = do
                 spid2 <- lookupRouter "corenlp" router
                 tellLog $ "spid2 = " ++ show spid2
 
-                spawnLocal $ serviceHandshake spid0 (clientUnit @ComputeQuery @ComputeResult qqvar1)
-                spawnLocal $ serviceHandshake spid1 (clientUnit @StatusQuery @StatusResult qqvar2)
-                spawnLocal $ serviceHandshake spid2 (clientUnit @QCoreNLP @RCoreNLP qqvar3)
+                _ <- spawnLocal $ serviceHandshake spid0 (clientUnit @ComputeQuery @ComputeResult qqvar1)
+                _ <- spawnLocal $ serviceHandshake spid1 (clientUnit @StatusQuery @StatusResult qqvar2)
+                _ <- spawnLocal $ serviceHandshake spid2 (clientUnit @QCoreNLP @RCoreNLP qqvar3)
                 () <- expect -- indefinite wait. TODO: make this more idiomatic
                 pure ()
         )
-    etagcontext <- defaultETagContext False
-    run (spapiPort spapicfg) $
+    etagcontext <- liftIO $ defaultETagContext False
+    liftIO $ run (spapiPort spapicfg) $
       etag etagcontext NoMaxAge  $
         serve api (     wsStream qqvar2
                    :<|> serveDirectoryFileServer (spapiStaticDir spapicfg)
