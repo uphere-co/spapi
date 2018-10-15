@@ -25,7 +25,7 @@ library
   other-modules:
 
   build-depends:
-      base            >= 4.8 && < 4.10
+      base            >= 4.8 && < 4.12
     , bytestring
     , containers
     , data-default
@@ -46,7 +46,7 @@ library
     , ghc-prim
     , haskell-src-exts
     , haskell-src-meta
-    , hscolour
+    -- , hscolour
     , template-haskell
 
     --
@@ -71,7 +71,7 @@ executable spapi-reflex
   hs-source-dirs: .
   default-language: Haskell2010
   build-depends:
-      base >= 4.8 && < 4.10
+      base >= 4.8
     , spapi-reflex
   if !impl(ghcjs)
     build-depends:

@@ -37,14 +37,17 @@ in
     //
     {
 
-      reflex-dom-contrib = self.callCabal2nix
+      reflex-dom-contrib = pkgs.haskell.lib.doJailbreak (
+        self.callCabal2nix
         "reflex-dom-contrib"
         (pkgs.fetchFromGitHub {
           owner = "reflex-frp";
           repo = "reflex-dom-contrib";
-          rev = "b47f90c810c838009bf69e1f8dacdcd10fe8ffe3";
-          sha256 = "0yvjnr9xfm0bg7b6q7ssdci43ca2ap3wvjhshv61dnpvh60ldsk9";
-        }) {};
+          rev = "10818e345c4cb34c6a1282add2c26e05c6007ad6";
+          sha256 = "17ki3vnq4r4rhhl4yxkg82k2ybvw9xli950q8h6pmjb0qfmg27i9";
+        })
+        {}
+      );
 
       reflex-dom-nested-routing = self.callCabal2nix
         "reflex-dom-nested-routing"
@@ -57,7 +60,7 @@ in
 
       wai-middleware-etag = pkgs.haskell.lib.doJailbreak super.wai-middleware-etag;
 
-
+      servant = pkgs.haskell.lib.dontCheck super.servant;
 
     };
 
@@ -78,12 +81,12 @@ in
             # TODO: move this code to uphere-nix-overlay
             let corenlpenv = pkgs.makeSetupHook { }
                   (pkgs.writeText "setup-hook.sh" ''
-                     export CLASSPATH="${corenlp_models}:${corenlp}/stanford-corenlp-3.7.0.jar:${corenlp}/protobuf.jar:${corenlp}/joda-time.jar:${corenlp}/jollyday.jar:${ghc.HCoreNLP}/share/x86_64-linux-ghc-8.2.1/HCoreNLP-0.1.0.0/HCoreNLPProto.jar"
+                     export CLASSPATH="${corenlp_models}:${corenlp}/stanford-corenlp-3.7.0.jar:${corenlp}/protobuf.jar:${corenlp}/joda-time.jar:${corenlp}/jollyday.jar:${ghc.HCoreNLP}/share/x86_64-linux-ghc-8.4.3/HCoreNLP-0.1.0.0/HCoreNLPProto.jar"
                   '');
             in if ghc.ghc.isGhcjs or false then [] else [ corenlpenv ] ;
 
   shells = {
-    ghc8_2_1 = ["spapi-common" "spapi-server" ];
+    ghc = ["spapi-common" "spapi-server" ];
     ghcjs = ["spapi-common" "semantic-reflex" "spapi-reflex" "servant-reflex" ];
   };
 })
