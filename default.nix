@@ -1,24 +1,36 @@
 { revision }:
 
-
-
 (import ./reflex-platform {}).project ({ pkgs, ... }:
 
 let
   fasttext = import (revision.uphere-nix-overlay + "/nix/cpp-modules/fasttext.nix") { inherit (pkgs) stdenv fetchgit; };
-  res_corenlp = import (revision.uphere-nix-overlay + "/nix/linguistic-resources/corenlp.nix") {
-    inherit (pkgs) fetchurl fetchzip srcOnly;
-  };
-  corenlp = res_corenlp.corenlp;
-  corenlp_models = res_corenlp.corenlp_models;
+  corenlp_pkgs =
+    import (revision.uphere-nix-overlay + "/nix/linguistic-resources/corenlp.nix") {
+      inherit (pkgs) fetchurl fetchzip srcOnly;
+    };
 
-  hsconfig = pkgs.lib.callPackageWith (pkgs//revision) (revision.uphere-nix-overlay + "/nix/haskell-modules/configuration-spapi.nix")
-               { inherit corenlp corenlp_models fasttext; };
+  hsconfig =
+    pkgs.lib.callPackageWith
+      (pkgs//revision)
+      (revision.uphere-nix-overlay + "/nix/haskell-modules/configuration-spapi.nix")
+      {
+        inherit fasttext;
+        inherit (corenlp_pkgs) corenlp corenlp_models;
+      };
+
+  env-hook-gen =
+    haskellPackages:
+      import (revision.uphere-nix-overlay + "/nix/env/corenlp.nix") {
+        inherit (pkgs) makeSetupHook writeText;
+        inherit haskellPackages;
+        corenlp = corenlp_pkgs.corenlp;
+        corenlp_models = corenlp_pkgs.corenlp_models;
+      };
 
 in
 
-
 {
+
   packages = {
     spapi-common = ./spapi-common;
     spapi-server = ./spapi-server;
@@ -27,16 +39,12 @@ in
     spapi-reflex = ./spapi-reflex;
   };
 
-
   overrides =
-
-
     self: super:
 
     hsconfig self super
     //
     {
-
       reflex-dom-contrib = pkgs.haskell.lib.doJailbreak (
         self.callCabal2nix
         "reflex-dom-contrib"
@@ -64,29 +72,14 @@ in
 
     };
 
-
-  #android.frontend = {
-  #  executableName = "frontend";
-  #  applicationId = "org.example.frontend";
-  #  displayName = "Example Android App";
-  #};
-
-  #ios.frontend = {
-  #  executableName = "frontend";
-  #  bundleIdentifier = "org.example.frontend";
-  #  bundleName = "Example iOS App";
-  #};
-
-  tools = ghc:
-            # TODO: move this code to uphere-nix-overlay
-            let corenlpenv = pkgs.makeSetupHook { }
-                  (pkgs.writeText "setup-hook.sh" ''
-                     export CLASSPATH="${corenlp_models}:${corenlp}/stanford-corenlp-3.7.0.jar:${corenlp}/protobuf.jar:${corenlp}/joda-time.jar:${corenlp}/jollyday.jar:${ghc.HCoreNLP}/share/x86_64-linux-ghc-8.4.3/HCoreNLP-0.1.0.0/HCoreNLPProto.jar"
-                  '');
-            in if ghc.ghc.isGhcjs or false then [] else [ corenlpenv ] ;
+  tools = ghc: let env-hook = env-hook-gen ghc;
+               in if ghc.ghc.isGhcjs or false
+                  then []
+                  else [ env-hook ];  # NOTE: you cannot have non-variable in this list.
 
   shells = {
     ghc = ["spapi-common" "spapi-server" ];
     ghcjs = ["spapi-common" "semantic-reflex" "spapi-reflex" "servant-reflex" ];
   };
+
 })
