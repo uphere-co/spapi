@@ -1,6 +1,15 @@
 { revision }:
 
-(import ./reflex-platform {}).project ({ pkgs, ... }:
+let
+  reflex-platform-src =
+     (import (revision.uphere-nix-overlay + "/nix/web-modules/reflex.nix") {}).reflex-platform-src;
+  reflex-platform = import reflex-platform-src {};
+
+in
+
+reflex-platform.project (
+
+{ pkgs, ... }:
 
 let
   fasttext = import (revision.uphere-nix-overlay + "/nix/cpp-modules/fasttext.nix") { inherit (pkgs) stdenv fetchgit; };
