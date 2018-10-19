@@ -3,6 +3,12 @@
 let
   reflex-platform-src =
      (import (revision.uphere-nix-overlay + "/nix/web-modules/reflex.nix") {}).reflex-platform-src;
+  servant-reflex-src =
+     (import (revision.uphere-nix-overlay + "/nix/web-modules/reflex.nix") {}).servant-reflex-src;
+  semantic-reflex-src =
+     (import (revision.uphere-nix-overlay + "/nix/web-modules/reflex.nix") {}).semantic-reflex-src;
+
+
   reflex-platform = import reflex-platform-src {};
 
 in
@@ -43,8 +49,8 @@ in
   packages = {
     spapi-common = ./spapi-common;
     spapi-server = ./spapi-server;
-    semantic-reflex = ./semantic-reflex/semantic-reflex;
-    servant-reflex = ./servant-reflex;
+    semantic-reflex = semantic-reflex-src + "/semantic-reflex";
+    servant-reflex = servant-reflex-src;
     spapi-reflex = ./spapi-reflex;
   };
 
