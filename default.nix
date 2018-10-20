@@ -37,9 +37,8 @@ let
     haskellPackages:
       import (revision.uphere-nix-overlay + "/nix/env/corenlp.nix") {
         inherit (pkgs) makeSetupHook writeText;
-        inherit haskellPackages;
-        corenlp = corenlp_pkgs.corenlp;
-        corenlp_models = corenlp_pkgs.corenlp_models;
+        inherit (haskellPackages) HCoreNLP;
+        inherit (corenlp_pkgs) corenlp corenlp_models;
       };
 
 in
