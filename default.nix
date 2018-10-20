@@ -49,8 +49,6 @@ in
   packages = {
     spapi-common = ./spapi-common;
     spapi-server = ./spapi-server;
-    semantic-reflex = semantic-reflex-src + "/semantic-reflex";
-    servant-reflex = servant-reflex-src;
     spapi-reflex = ./spapi-reflex;
   };
 
@@ -85,6 +83,19 @@ in
 
       servant = pkgs.haskell.lib.dontCheck super.servant;
 
+      semantic-reflex =
+        let p = self.callCabal2nix
+                  "semantic-reflex"
+                  (semantic-reflex-src + "/semantic-reflex")
+                  {};
+        in pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p);
+
+      servant-reflex =
+        self.callCabal2nix
+          "servant-reflex"
+          servant-reflex-src
+          {};
+
     };
 
   tools = ghc: let env-hook = env-hook-gen ghc;
@@ -93,8 +104,8 @@ in
                   else [ env-hook ];  # NOTE: you cannot have non-variable in this list.
 
   shells = {
-    ghc = ["spapi-common" "spapi-server" ];
-    ghcjs = ["spapi-common" "semantic-reflex" "spapi-reflex" "servant-reflex" ];
+    ghc   = [ "spapi-common" "spapi-server" ];
+    ghcjs = [ "spapi-common" "spapi-reflex" ];
   };
 
 })
