@@ -45,6 +45,7 @@ library
                      , cloud-haskell-util
                      , compute-worker
                      , task-corenlp
+                     , task-semantic-parser
                      --
                      , spapi-common
 
@@ -91,6 +92,7 @@ executable spapi-server
                      , cloud-haskell-util
                      , compute-worker
                      , task-corenlp
+                     , task-semantic-parser
                      --
                      , spapi-common
                      , spapi-server

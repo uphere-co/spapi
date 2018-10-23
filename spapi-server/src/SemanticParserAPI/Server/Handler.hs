@@ -22,13 +22,16 @@ import           SRL.Analyze.Type                    (outputDocStructure
                                                      ,outputX'tree)
 -- compute-pipeline layer
 import           CloudHaskell.QueryQueue             (QQVar,singleQuery)
-import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
-                                                     ,ResultSentence(..))
+import           SemanticParserAPI.Compute.Type
 import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
 import           SemanticParserAPI.Type              (InputSentence(..),APIResult(..))
 import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput)
                                                      ,StatusResult(..))
-import           Task.CoreNLP (QCoreNLP(..),RCoreNLP(..))
+import           Task.CoreNLP                        ( QCoreNLP(..), RCoreNLP(..) )
+import           Task.SemanticParser                 ( ComputeQuery(..)
+                                                     , ComputeResult(..)
+                                                     , ResultSentence(..)
+                                                     )
 --
 import           SemanticParserAPI.Server.Worker
                  ( allFrames

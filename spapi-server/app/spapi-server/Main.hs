@@ -47,10 +47,10 @@ import           CloudHaskell.QueryQueue             (emptyQQ)
 import           CloudHaskell.Type                   (TCPPort(..),Gateway(..))
 import           CloudHaskell.Util                   (lookupRouter,tellLog)
 import           SemanticParserAPI.Compute.Task      (rtable)
-import           SemanticParserAPI.Compute.Type      (ComputeQuery(..),ComputeResult(..)
-                                                     ,ComputeConfig(..), NetworkConfig(..))
+import           SemanticParserAPI.Compute.Type      (ComputeConfig(..), NetworkConfig(..))
 import           SemanticParserAPI.Compute.Type.Status (StatusQuery(..),StatusResult(..))
 import           Task.CoreNLP                        (QCoreNLP,RCoreNLP)
+import           Task.SemanticParser                 (ComputeQuery(..),ComputeResult(..))
 -- spapi layer
 import           API
 import           SemanticParserAPI.Server.Handler
