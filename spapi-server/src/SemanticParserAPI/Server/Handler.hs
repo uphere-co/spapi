@@ -22,7 +22,6 @@ import           SRL.Analyze.Type                    (outputDocStructure
                                                      ,outputX'tree)
 -- compute-pipeline layer
 import           CloudHaskell.QueryQueue             (QQVar,singleQuery)
--- import           Compute.Type                        ()
 import           Compute.Type.Status                 ( StatusQuery(..), StatusResult(..) )
 import           SemanticParserAPI.Type              (InputSentence(..),APIResult(..))
 import qualified SemanticParserAPI.Type        as S  (ConsoleOutput(ConsoleOutput)
