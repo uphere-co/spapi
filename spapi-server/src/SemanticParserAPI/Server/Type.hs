@@ -11,20 +11,27 @@ import           Data.Aeson
                  , genericParseJSON
                  , genericToJSON
                  )
-import           Data.Char      ( toLower )
-import           Data.Semigroup ( (<>) )
-import           Data.Text      ( Text )
-import           GHC.Generics   ( Generic )
+import           Data.Char         ( toLower )
+import           Data.Semigroup    ( (<>) )
+import           Data.Text         ( Text )
+import           GHC.Generics      ( Generic )
+------
+import           CloudHaskell.Type ( RenderError(..) )
 
 data SPAPIServerError = SPAPIServerConfigError Text
 
+instance RenderError SPAPIServerError where
+  renderError (SPAPIServerConfigError txt) =
+    "Configuration error: " <> txt
+
+{-
 class ShowError e where
   showError :: e -> Text
 
 instance ShowError SPAPIServerError where
   showError (SPAPIServerConfigError txt) =
     "Configuration error: " <> txt
-
+-}
 
 data SPAPIConfig = SPAPIConfig {
                      spapiStaticDir :: FilePath

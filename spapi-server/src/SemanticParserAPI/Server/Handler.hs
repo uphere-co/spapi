@@ -1,8 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 module SemanticParserAPI.Server.Handler where
 
 import           Control.Concurrent            ( threadDelay )
 import           Control.Lens                  ( (^.) )
 import           Control.Monad.IO.Class        ( MonadIO(liftIO) )
+import           Control.Monad.Trans.Except    ( ExceptT(..), withExceptT )
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.Foldable                 ( for_ )
@@ -14,7 +16,10 @@ import           Network.WebSockets.Connection ( Connection
                                                , sendTextData
                                                )
 import           Servant                       ( throwError )
-import           Servant.Server                ( Handler, err404 )
+import           Servant.Client                ( BaseUrl(..), ClientM, ClientEnv(..)
+                                               , client, parseBaseUrl, runClientM
+                                               )
+import           Servant.Server                ( Handler(..), err404 )
 -- language-engine layer
 import           FrameNet.Query.Frame          ( FrameDB )
 import           Lexicon.Type                  ( RoleInstance )
@@ -45,14 +50,31 @@ import           SemanticParserAPI.Server.Worker
                  )
 
 
+import Worker.API (soAPI)
+-- temporary
+-- import Compute.Worker (getSemantic)
+
+-- client
+
+getSemantic :: ComputeQuery -> ClientM ComputeResult
+getSemantic = client  soAPI
+
+
+-- TODO: FrameDB and [RoleInstance] should be hidden in Reader monad
 postAnalysis ::
-     FrameDB
+     ClientEnv
+  -> FrameDB
   -> [RoleInstance]
   -- -> QQVar ComputeQuery ComputeResult
   -> InputSentence
   -> Handler APIResult
-postAnalysis framedb rolemap {- qqvar -} (InputSentence sent) = do
-{-  CR_Sentence (ResultSentence _ tokss mgs cout) <- liftIO (singleQuery qqvar (CQ_Sentence sent))
+postAnalysis env framedb rolemap {- qqvar -} (InputSentence sent) = do
+  let query = CQ_Sentence sent
+  CR_Sentence (ResultSentence _ tokss mgs cout) <-
+    Handler $ withExceptT (const err404) $
+      ExceptT $ liftIO $ runClientM (getSemantic query) env
+
+    -- liftIO (singleQuery qqvar query))
   dots <- liftIO $ mapM createDotGraph mgs
   svgs <- liftIO $ mapM createOGDFSVG (zip [1..] mgs)
   let mts = concatMap (mkMeaningTree rolemap) mgs
@@ -60,8 +82,9 @@ postAnalysis framedb rolemap {- qqvar -} (InputSentence sent) = do
       fns = map (mkFrameNetData framedb) (concatMap allFrames mts)
       cout' = S.ConsoleOutput (cout^.outputX'tree) (cout^.outputDocStructure) (cout^.outputMatchedFrames)
   pure (APIResult tokss mts arbs dots svgs fns cout')
--}
-  throwError err404
+
+  --  liftIO $ print sent
+  -- throwError err404
 
 getStatus :: {- QQVar StatusQuery StatusResult -> -} Handler S.StatusResult
 getStatus {- qqvar -} = do

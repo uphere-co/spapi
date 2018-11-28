@@ -19,6 +19,7 @@ import           Data.Proxy                          (Proxy(..))
 import           Data.Semigroup                      ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import           Network.HTTP.Client ( defaultManagerSettings, newManager )
 import           Network.Wai.Handler.Warp            (run)
 import           Network.Wai.Middleware.ETag         (MaxAge(..),etag,defaultETagContext)
 import           Options.Applicative                 (Parser,ParserInfo
@@ -26,6 +27,7 @@ import           Options.Applicative                 (Parser,ParserInfo
                                                      ,help,short,long,execParser,strOption
                                                      )
 import           Servant.API                         ((:<|>)((:<|>)),(:>))
+import           Servant.Client                      (ClientEnv(..), parseBaseUrl )
 import           Servant.Utils.StaticFiles           (serveDirectoryFileServer)
 import           Servant.Server                      (serve)
 import           Servant.API.WebSocket               (WebSocket)
@@ -47,7 +49,7 @@ import           CloudHaskell.Client                 (client
 -}
 import           CloudHaskell.QueryQueue             (emptyQQ)
 import           CloudHaskell.Type                   (TCPPort(..),Gateway(..))
-import           CloudHaskell.Util                   (lookupRouter,tellLog)
+import           CloudHaskell.Util                   (handleError,lookupRouter,tellLog)
 import           Compute.Task                        (rtable)
 import           Compute.Type.Status                 (StatusQuery(..),StatusResult(..))
 import           Task.CoreNLP                        (QCoreNLP,RCoreNLP)
@@ -62,8 +64,7 @@ import           SemanticParserAPI.Server.Handler
                  -- , postCoreNLP
                  )
 import           SemanticParserAPI.Server.Type
-                 ( ShowError(..)
-                 , SPAPIConfig(..)
+                 ( SPAPIConfig(..)
                  , SPAPIServerError(..)
                  )
 
@@ -89,14 +90,14 @@ serverConfig = info pOptions (fullDesc <> progDesc "spapi-server")
 api :: Proxy ("stream" :> WebSocket :<|> API)
 api = Proxy
 
-
+{-
 handleError :: (ShowError e) => ExceptT e IO () -> IO ()
 handleError action = do
   r <- runExceptT action
   case r of
     Left e -> TIO.putStrLn (showError e)
     Right _ -> pure ()
-
+-}
 
 main :: IO ()
 main = do
@@ -126,6 +127,11 @@ main = do
         rolemapfile = langcfg ^. srlcfg_rolemap_file
     framedb <- liftIO $ loadFrameData framedir
     rolemap <- liftIO $ loadRoleInsts rolemapfile
+
+    manager' <- liftIO $ newManager defaultManagerSettings
+    baseurl <- liftIO$ parseBaseUrl "http://localhost:3994"
+    let env = ClientEnv manager' baseurl Nothing
+
     {-
     _ <- liftIO $ forkIO $
       client
@@ -154,7 +160,7 @@ main = do
       etag etagcontext NoMaxAge  $
         serve api (     wsStream -- qqvar2
                    :<|> serveDirectoryFileServer (spapiStaticDir spapicfg)
-                   :<|> postAnalysis framedb rolemap -- qqvar1
+                   :<|> postAnalysis env framedb rolemap -- qqvar1
                    :<|> getStatus -- qqvar2
                    -- :<|> postCoreNLP -- qqvar3
                   )
