@@ -36,7 +36,6 @@ import           SRL.Analyze.Config          ( SRLConfig
                                              )
 ------ compute-pipeline layer
 import           CloudHaskell.Util           ( handleError )
-import           Worker.Type                 ( ComputeConfig(..) )
 ------ spapi layer
 import           API
 import           SemanticParserAPI.Server.Handler
@@ -51,7 +50,7 @@ import           SemanticParserAPI.Server.Type
 
 
 data ServerConfig = ServerConfig {
-                      computeConfig :: FilePath
+                      computeURL :: String
                     , langConfig    :: FilePath
                     , spapiConfig   :: FilePath
                     }
@@ -59,7 +58,7 @@ data ServerConfig = ServerConfig {
 
 
 pOptions :: Parser ServerConfig
-pOptions = ServerConfig <$> strOption (long "compute" <> short 'c' <> help "Compute pipeline configuration")
+pOptions = ServerConfig <$> strOption (long "compute" <> short 'c' <> help "Compute pipeline base URL")
                         <*> strOption (long "lang"    <> short 'l' <> help "Language engine configuration")
                         <*> strOption (long "spapi"   <> short 's' <> help "SPAPI web server configuration")
 
@@ -76,28 +75,20 @@ main :: IO ()
 main = do
   handleError $ do
     cfg <- liftIO $ execParser serverConfig
-    compcfg  <- withExceptT (\x -> SPAPIServerConfigError ("ComputeConfig: " <> T.pack x)) $
-                  ExceptT $
-                    eitherDecodeStrict @ComputeConfig <$> B.readFile (computeConfig cfg)
     langcfg  <- withExceptT (\x -> SPAPIServerConfigError ("SRLConfig: " <> T.pack x)) $
                   ExceptT $
                     eitherDecodeStrict @SRLConfig <$> B.readFile (langConfig cfg)
     spapicfg <- withExceptT (\x -> SPAPIServerConfigError ("SPAPIConfig: " <> T.pack x)) $
                   ExceptT $
                     eitherDecodeStrict <$> B.readFile (spapiConfig cfg)
-    liftIO $ print (compcfg,langcfg,spapicfg)
-    let -- cport  = port  (computeWeb compcfg)
-        -- chostg = hostg (computeWeb compcfg)
-        -- chostl = hostl (computeWeb compcfg)
-        -- shostg = hostg (computeServer compcfg)
-        -- sport  = TCPPort (port  (computeServer compcfg))
-        framedir = langcfg ^. srlcfg_framenet_framedir
+    -- prepare for FrameNet
+    let framedir = langcfg ^. srlcfg_framenet_framedir
         rolemapfile = langcfg ^. srlcfg_rolemap_file
     framedb <- liftIO $ loadFrameData framedir
     rolemap <- liftIO $ loadRoleInsts rolemapfile
-
+    -- prepare for servant client
     manager' <- liftIO $ newManager defaultManagerSettings
-    baseurl <- liftIO$ parseBaseUrl "http://localhost:3994"
+    baseurl <- liftIO$ parseBaseUrl (computeURL cfg)
     let env = ClientEnv manager' baseurl Nothing
 
     etagcontext <- liftIO $ defaultETagContext False

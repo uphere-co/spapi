@@ -24,14 +24,6 @@ instance RenderError SPAPIServerError where
   renderError (SPAPIServerConfigError txt) =
     "Configuration error: " <> txt
 
-{-
-class ShowError e where
-  showError :: e -> Text
-
-instance ShowError SPAPIServerError where
-  showError (SPAPIServerConfigError txt) =
-    "Configuration error: " <> txt
--}
 
 data SPAPIConfig = SPAPIConfig {
                      spapiStaticDir :: FilePath
