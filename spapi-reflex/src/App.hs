@@ -83,8 +83,8 @@ restAPI = Proxy
 statusAPI :: Proxy STATUSAPI
 statusAPI = Proxy
 
-corenlpAPI :: Proxy CORENLPAPI
-corenlpAPI = Proxy
+-- corenlpAPI :: Proxy CORENLPAPI
+-- corenlpAPI = Proxy
 
 runWithLoader :: MonadWidget t m => m ()
 runWithLoader = do
@@ -226,12 +226,12 @@ sectionStatus ::
       forall t m.
        (SupportsServantReflex t m, MonadWidget t m, Monad m) =>
        Client t m STATUSAPI ()
-    -> Client t m CORENLPAPI ()
+    -- > Client t m CORENLPAPI ()
     -> RouteWriterT t Text (RouteT t Text m) ()
-sectionStatus statusCheck postCoreNLP = do
+sectionStatus statusCheck {- postCoreNLP -} = do
   ebtn <- paragraph $ button def $ text "test"
-  let dtxt = constDyn (Right "I love you")
-  response <- lift $ lift $ fmapMaybe reqSuccess <$> postCoreNLP dtxt ebtn
+  -- let dtxt = constDyn (Right "I love you")
+  -- response <- lift $ lift $ fmapMaybe reqSuccess <$> postCoreNLP dtxt ebtn
   e <- count ebtn
   paragraph $ do
     text "Clicked"
@@ -270,11 +270,13 @@ app =
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn httpBase)
+    {-
     let postcorenlp  = client
                          corenlpAPI
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn httpBase)
+    -}
     let mainConfig =  def
             & elConfigAttributes |~ ("id" =: "main")
             & elConfigClasses |~ "ui container"
@@ -326,7 +328,7 @@ app =
 
       pages dmode [ sectionSentence postanalysis
                   , sectionReuters
-                  , sectionStatus statusCheck postcorenlp
+                  , sectionStatus statusCheck -- postcorenlp
                   ]
 
     -- Footer

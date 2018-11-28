@@ -90,6 +90,7 @@ executable spapi-server
                      , semantic-types
                      --
                      , cloud-haskell-util
+                     , compute-so-types
                      , compute-worker
                      , task-corenlp
                      , task-semantic-parser
@@ -99,6 +100,8 @@ executable spapi-server
   hs-source-dirs:      app/spapi-server
   default-language:    Haskell2010
   ghc-options:         -Wall
+                       -Werror
+                       -fno-warn-unused-do-bind
                        -O2
                        -threaded
                        -rtsopts

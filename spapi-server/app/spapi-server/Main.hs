@@ -1,10 +1,10 @@
-{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators #-}
--- {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+{-# OPTIONS_GHC -w #-}
 module Main where
 
 import           Control.Concurrent                  (forkIO)
@@ -29,7 +29,7 @@ import           Servant.API                         ((:<|>)((:<|>)),(:>))
 import           Servant.Utils.StaticFiles           (serveDirectoryFileServer)
 import           Servant.Server                      (serve)
 import           Servant.API.WebSocket               (WebSocket)
--- language-engine layer
+------ language-engine layer
 import           FrameNet.Query.Frame                (loadFrameData)
 import           Lexicon.Query                       (loadRoleInsts)
 import           SRL.Analyze.Config (
@@ -37,27 +37,29 @@ import           SRL.Analyze.Config (
                  , srlcfg_framenet_framedir
                  , srlcfg_rolemap_file
                  )
--- compute-pipeline layer
+------ compute-pipeline layer
+{-
 import           CloudHaskell.Client                 (client
                                                      ,clientUnit
                                                      ,routerHandshake
                                                      ,serviceHandshake
                                                      ,heartBeatHandshake)
+-}
 import           CloudHaskell.QueryQueue             (emptyQQ)
 import           CloudHaskell.Type                   (TCPPort(..),Gateway(..))
 import           CloudHaskell.Util                   (lookupRouter,tellLog)
 import           Compute.Task                        (rtable)
-import           Compute.Type                        (ComputeConfig(..), NetworkConfig(..))
 import           Compute.Type.Status                 (StatusQuery(..),StatusResult(..))
 import           Task.CoreNLP                        (QCoreNLP,RCoreNLP)
 import           Task.SemanticParser                 (ComputeQuery(..),ComputeResult(..))
--- spapi layer
+import           Worker.Type                        (ComputeConfig(..), NetworkConfig(..))
+------ spapi layer
 import           API
 import           SemanticParserAPI.Server.Handler
                  ( getStatus
                  , postAnalysis
                  , wsStream
-                 , postCoreNLP
+                 -- , postCoreNLP
                  )
 import           SemanticParserAPI.Server.Type
                  ( ShowError(..)
@@ -100,11 +102,11 @@ main :: IO ()
 main = do
   handleError $ do
     cfg <- liftIO $ execParser serverConfig
-
+    {-
     qqvar1 <- liftIO $ newTVarIO emptyQQ
     qqvar2 <- liftIO $ newTVarIO emptyQQ
     qqvar3 <- liftIO $ newTVarIO emptyQQ
-
+    -}
     compcfg  <- withExceptT (\x -> SPAPIServerConfigError ("ComputeConfig: " <> T.pack x)) $
                   ExceptT $
                     eitherDecodeStrict @ComputeConfig <$> B.readFile (computeConfig cfg)
@@ -124,6 +126,7 @@ main = do
         rolemapfile = langcfg ^. srlcfg_rolemap_file
     framedb <- liftIO $ loadFrameData framedir
     rolemap <- liftIO $ loadRoleInsts rolemapfile
+    {-
     _ <- liftIO $ forkIO $
       client
         rtable
@@ -145,12 +148,13 @@ main = do
                 () <- expect -- indefinite wait. TODO: make this more idiomatic
                 pure ()
         )
+    -}
     etagcontext <- liftIO $ defaultETagContext False
     liftIO $ run (spapiPort spapicfg) $
       etag etagcontext NoMaxAge  $
-        serve api (     wsStream qqvar2
+        serve api (     wsStream -- qqvar2
                    :<|> serveDirectoryFileServer (spapiStaticDir spapicfg)
-                   :<|> postAnalysis framedb rolemap qqvar1
-                   :<|> getStatus qqvar2
-                   :<|> postCoreNLP qqvar3
+                   :<|> postAnalysis framedb rolemap -- qqvar1
+                   :<|> getStatus -- qqvar2
+                   -- :<|> postCoreNLP -- qqvar3
                   )
