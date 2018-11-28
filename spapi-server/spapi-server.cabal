@@ -15,7 +15,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  ghc-options:         -Wall -O2
+  ghc-options:         -Wall -Werror -O2
   exposed-modules:     SemanticParserAPI.Server.Handler
                        SemanticParserAPI.Server.Type
                        SemanticParserAPI.Server.Worker
@@ -64,6 +64,7 @@ executable spapi-server
                      , base64-bytestring
                      , binary
                      , bytestring
+                     , containers
                      , directory
                      , filepath
                      , http-client
@@ -74,6 +75,7 @@ executable spapi-server
                      , servant-client
                      , servant-server
                      , servant-websockets
+                     , stm
                      , text
                      , transformers
                      , unordered-containers
@@ -81,11 +83,6 @@ executable spapi-server
                      , wai-middleware-etag
                      , warp
                      , websockets
-                     --
-                     , containers
-                     , distributed-process
-                     , distributed-process-lifted
-                     , stm
                      --
                      , HFrameNet
                      , lexicon

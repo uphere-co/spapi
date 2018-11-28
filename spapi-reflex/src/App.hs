@@ -11,7 +11,6 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeApplications      #-}
-
 {-# OPTIONS_GHC -Wno-name-shadowing -Wno-unused-do-bind -fprint-explicit-kinds #-}
 
 module App where
@@ -61,8 +60,6 @@ import           Sample
 import           StatusView (renderStatus)
 
 
-
-
 api :: Proxy API
 api = Proxy
 
@@ -76,15 +73,12 @@ httpBase :: BaseUrl
 httpBase = BaseFullUrl Http hostAddress hostPort ""
 
 
-
 restAPI :: Proxy RESTAPI
 restAPI = Proxy
 
 statusAPI :: Proxy STATUSAPI
 statusAPI = Proxy
 
--- corenlpAPI :: Proxy CORENLPAPI
--- corenlpAPI = Proxy
 
 runWithLoader :: MonadWidget t m => m ()
 runWithLoader = do
@@ -93,6 +87,7 @@ runWithLoader = do
       liftJSM syncPoint
       pb' <- fmap updated $ widgetHold blank $ app <$ pb
   return ()
+
 
 loadingDimmer :: MonadWidget t m => Event t () -> m ()
 loadingDimmer evt =
@@ -121,13 +116,11 @@ analyzeButton = button conf $ text "Analyze"
     conf = def & buttonConfig_type .~ LinkButton & buttonConfig_color |?~ Teal
 
 
-
 mkExampleDropdown :: (MonadWidget t m) => Dynamic t Bool -> m (Dropdown t (Maybe Text))
 mkExampleDropdown goodex =
   dropdown def Nothing $ TaggedDynamic $
     let dexampleData = fmap (\case True -> goodExampleData; False -> exampleData) goodex
     in fmap (foldMap (\(t,_) -> t =: text t)) dexampleData
-
 
 
 expandableSegments :: (MonadWidget t m) => [(Text,m ())] -> m ()
@@ -221,17 +214,14 @@ sectionReuters = do
     text "Reuters section will be here."
 
 
-
+-- TODO: remove this. This should be a part of orchestration dashboard.
 sectionStatus ::
       forall t m.
        (SupportsServantReflex t m, MonadWidget t m, Monad m) =>
        Client t m STATUSAPI ()
-    -- > Client t m CORENLPAPI ()
     -> RouteWriterT t Text (RouteT t Text m) ()
-sectionStatus statusCheck {- postCoreNLP -} = do
+sectionStatus statusCheck = do
   ebtn <- paragraph $ button def $ text "test"
-  -- let dtxt = constDyn (Right "I love you")
-  -- response <- lift $ lift $ fmapMaybe reqSuccess <$> postCoreNLP dtxt ebtn
   e <- count ebtn
   paragraph $ do
     text "Clicked"
@@ -270,13 +260,6 @@ app =
                          (Proxy :: Proxy m)
                          (Proxy :: Proxy ())
                          (constDyn httpBase)
-    {-
-    let postcorenlp  = client
-                         corenlpAPI
-                         (Proxy :: Proxy m)
-                         (Proxy :: Proxy ())
-                         (constDyn httpBase)
-    -}
     let mainConfig =  def
             & elConfigAttributes |~ ("id" =: "main")
             & elConfigClasses |~ "ui container"
@@ -304,7 +287,6 @@ app =
 
           (e1, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
             text "Sentence analysis"
-          -- display =<< holdDyn "" ("clicked" <$ (domEvent Click e))
           tellRoute $ ["sentence"] <$ domEvent Click e1
           (e2, _) <- menuItem' (def & menuItemConfig_disabled |~ True) $
             text "Reuters Archive"
@@ -328,7 +310,7 @@ app =
 
       pages dmode [ sectionSentence postanalysis
                   , sectionReuters
-                  , sectionStatus statusCheck -- postcorenlp
+                  , sectionStatus statusCheck
                   ]
 
     -- Footer

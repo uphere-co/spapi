@@ -8,16 +8,13 @@ import           Control.Monad.Trans.Except    ( ExceptT(..), withExceptT )
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.Foldable                 ( for_ )
-import           Data.Text                     ( Text )
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import           Network.WebSockets.Connection ( Connection
                                                , forkPingThread
                                                , sendTextData
                                                )
-import           Servant                       ( throwError )
-import           Servant.Client                ( BaseUrl(..), ClientM, ClientEnv(..)
-                                               , client, parseBaseUrl, runClientM
+import           Servant.Client                ( ClientM, ClientEnv(..)
+                                               , client, runClientM
                                                )
 import           Servant.Server                ( Handler(..), err404 )
 -- language-engine layer
@@ -30,13 +27,10 @@ import           SRL.Analyze.Type              ( outputDocStructure
                                                , outputX'tree
                                                )
 -- compute-pipeline layer
-import           CloudHaskell.QueryQueue       ( QQVar, singleQuery )
-import           Compute.Type.Status           ( StatusQuery(..), StatusResult(..) )
 import           SemanticParserAPI.Type        ( InputSentence(..), APIResult(..) )
 import qualified SemanticParserAPI.Type as S   ( ConsoleOutput(ConsoleOutput)
                                                , StatusResult(..)
                                                )
-import           Task.CoreNLP                  ( QCoreNLP(..), RCoreNLP(..) )
 import           Task.SemanticParser           ( ComputeQuery(..)
                                                , ComputeResult(..)
                                                , ResultSentence(..)
@@ -50,10 +44,8 @@ import           SemanticParserAPI.Server.Worker
                  )
 
 
-import Worker.API (soAPI)
--- temporary
--- import Compute.Worker (getSemantic)
-
+-- TODO: the following getSemantic client should be located elsewhere.
+import           Worker.API (soAPI)
 -- client
 
 getSemantic :: ComputeQuery -> ClientM ComputeResult
@@ -65,16 +57,13 @@ postAnalysis ::
      ClientEnv
   -> FrameDB
   -> [RoleInstance]
-  -- -> QQVar ComputeQuery ComputeResult
   -> InputSentence
   -> Handler APIResult
-postAnalysis env framedb rolemap {- qqvar -} (InputSentence sent) = do
+postAnalysis env framedb rolemap (InputSentence sent) = do
   let query = CQ_Sentence sent
   CR_Sentence (ResultSentence _ tokss mgs cout) <-
     Handler $ withExceptT (const err404) $
       ExceptT $ liftIO $ runClientM (getSemantic query) env
-
-    -- liftIO (singleQuery qqvar query))
   dots <- liftIO $ mapM createDotGraph mgs
   svgs <- liftIO $ mapM createOGDFSVG (zip [1..] mgs)
   let mts = concatMap (mkMeaningTree rolemap) mgs
@@ -83,19 +72,17 @@ postAnalysis env framedb rolemap {- qqvar -} (InputSentence sent) = do
       cout' = S.ConsoleOutput (cout^.outputX'tree) (cout^.outputDocStructure) (cout^.outputMatchedFrames)
   pure (APIResult tokss mts arbs dots svgs fns cout')
 
-  --  liftIO $ print sent
-  -- throwError err404
-
-getStatus :: {- QQVar StatusQuery StatusResult -> -} Handler S.StatusResult
-getStatus {- qqvar -} = do
+getStatus :: Handler S.StatusResult
+getStatus = do
+    -- old code
     {- SR lst <- liftIO (singleQuery qqvar SQ)
     pure (S.StatusResult lst)
     -}
     pure (S.StatusResult [])
 
 
-wsStream :: MonadIO m => {- QQVar StatusQuery StatusResult -> -} Connection -> m ()
-wsStream {- qqvar -} conn = do
+wsStream :: MonadIO m => Connection -> m ()
+wsStream conn = do
     liftIO $ forkPingThread conn 10
     liftIO $ for_ ([1..] :: [Int]) $ \_ -> do
       -- SR lst <- liftIO (singleQuery qqvar SQ)
@@ -103,14 +90,4 @@ wsStream {- qqvar -} conn = do
       let statusData = S.StatusResult []
       liftIO $ print statusData
       sendTextData conn (TE.decodeUtf8 (BL.toStrict (A.encode statusData)))
-      threadDelay 1000000
-
-{-
-postCoreNLP ::
-     QQVar QCoreNLP RCoreNLP
-  -> Text
-  -> Handler Text
-postCoreNLP qqvar txt = do
-  RCoreNLP doc <- liftIO (singleQuery qqvar (QCoreNLP txt))
-  pure (T.pack (show doc))
--}
+      threadDelay 10000000

@@ -3,8 +3,8 @@
 
 name:                spapi-common
 version:             0.1.0.0
--- synopsis:            
--- description:         
+synopsis:            Common API between web server and web client
+description:         Common API between web server and web client
 license:             OtherLicense
 license-file:        LICENSE
 author:              Ian-Woo Kim
@@ -15,7 +15,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  ghc-options:         -Wall -O2
+  ghc-options:         -Wall -Werror -O2
   exposed-modules:     API
                        Lib
                        SemanticParserAPI.Type
@@ -26,7 +26,6 @@ library
                      , data-default
                      , lens
                      , servant
-                     -- , servant-websockets
                      , text
                      , transformers
                      --
