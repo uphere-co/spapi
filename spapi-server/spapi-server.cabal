@@ -36,8 +36,6 @@ library
                      , unordered-containers
                      , websockets
                      --
-                     , error-handler
-                     --
                      , HFrameNet
                      , lexicon
                      , semantic-role-labeler
